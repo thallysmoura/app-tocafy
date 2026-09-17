@@ -2,6 +2,7 @@ import Sidebar from './Sidebar';
 import MobileHeader from './MobileHeader';
 import BottomTabBar from './BottomTabBar';
 import PlayerBar from './PlayerBar';
+import GlobalDownloadModal from './GlobalDownloadModal';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <BottomTabBar />
       <PlayerBar />
+      <GlobalDownloadModal />
     </div>
   );
 }

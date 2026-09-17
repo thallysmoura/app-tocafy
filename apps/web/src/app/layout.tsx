@@ -47,6 +47,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#121212',
+  // App é sempre escuro, sem tema claro — sem isso o navegador pode assumir
+  // esquema claro e "corrigir" texto sem cor explícita (ou extensões tipo
+  // Dark Reader tentam re-colorir a página, deixando texto preto no fundo escuro).
+  colorScheme: 'dark',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

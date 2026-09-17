@@ -4,6 +4,9 @@
 
 html,
 body {
+  /* Sinaliza pro navegador que essa página é escura de propósito — evita
+     ajuste automático de cor de texto/form baseado no tema do sistema. */
+  color-scheme: dark;
   background-color: #121212;
   color: #ffffff;
   /* Trava zoom por pinça/duplo-toque — fica fixo, como um app nativo. */
