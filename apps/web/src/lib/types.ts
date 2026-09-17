@@ -49,6 +49,8 @@ export type AuthUser = {
   email: string;
   displayName: string;
   mustChangePassword: boolean;
+  avatarUrl: string | null;
+  createdAt: string;
 };
 
 export type RepeatMode = 'off' | 'repeat-all' | 'repeat-one';

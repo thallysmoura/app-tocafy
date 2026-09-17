@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Search, Library, Heart, User, UploadCloud } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import Logo from './Logo';
 
 const NAV_GROUPS = [
@@ -22,9 +23,10 @@ const NAV_GROUPS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   return (
-    <aside className="hidden w-64 flex-shrink-0 flex-col bg-black p-6 sm:flex">
+    <aside className="hidden w-64 flex-shrink-0 flex-col bg-black p-6 pb-24 sm:flex">
       <div className="mb-8 flex items-center gap-2 text-xl font-bold text-white">
         <Logo size={28} /> Tocafy
       </div>
@@ -69,7 +71,13 @@ export default function Sidebar() {
         href="/profile"
         className="mt-auto flex items-center gap-3 pt-4 text-sm font-semibold text-muted hover:text-white"
       >
-        <User size={20} /> Perfil
+        {user?.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={user.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
+        ) : (
+          <User size={20} />
+        )}
+        Perfil
       </Link>
     </aside>
   );

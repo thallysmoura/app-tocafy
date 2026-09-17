@@ -1,10 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="tocafy-logo-bg-mask" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#1ED760"/>
-      <stop offset="100%" stop-color="#0E8F3E"/>
+    <linearGradient id="tocafy-brand-green-mask" x1="68" y1="62" x2="452" y2="462" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38EE83"/>
+      <stop offset="1" stop-color="#0BBE59"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" fill="url(#tocafy-logo-bg-mask)"/>
-  <path d="M26 22v20M32 15v34M38 22v20" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+  <rect width="512" height="512" fill="url(#tocafy-brand-green-mask)"/>
+  <rect x="134" y="190" width="34" height="112" rx="17" fill="white" fill-opacity="0.92"/>
+  <rect x="194" y="126" width="38" height="240" rx="19" fill="white"/>
+  <rect x="258" y="162" width="38" height="168" rx="19" fill="white"/>
+  <rect x="322" y="95" width="38" height="302" rx="19" fill="white"/>
+  <rect x="386" y="202" width="24" height="88" rx="12" fill="white" fill-opacity="0.72"/>
 </svg>

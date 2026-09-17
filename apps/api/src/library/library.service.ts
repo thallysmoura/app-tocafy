@@ -89,6 +89,31 @@ export class LibraryService implements OnModuleInit {
     return results;
   }
 
+  /** Normaliza título/artista pra comparar duplicatas (ignora acento, maiúscula,
+   * pontuação e sufixos tipo "(Official Video)"/"[4K Remaster]"). */
+  private normalizeForDedup(s: string) {
+    return s
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/\(.*?\)|\[.*?\]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  private async findDuplicateTrack(title: string, artistName: string) {
+    const normTitle = this.normalizeForDedup(title);
+    const normArtist = this.normalizeForDedup(artistName);
+    const candidates = await this.prisma.track.findMany({ include: { artist: true, album: true } });
+    return (
+      candidates.find(
+        (t) =>
+          this.normalizeForDedup(t.title) === normTitle &&
+          this.normalizeForDedup(t.artist?.name ?? '') === normArtist,
+      ) ?? null
+    );
+  }
+
   private async upsertArtist(name: string) {
     return this.prisma.artist.upsert({
       where: { name },
@@ -202,7 +227,7 @@ export class LibraryService implements OnModuleInit {
    */
   async importUploadedTrack(buffer: Buffer, originalName: string) {
     if (!this.r2.isEnabled) {
-      throw new BadRequestException('Upload indisponível: armazenamento R2 não configurado.');
+      throw new BadRequestException('Upload indisponível no momento.');
     }
 
     const metadata = await parseBuffer(buffer, 'audio/mpeg').catch(() => null);
@@ -210,6 +235,11 @@ export class LibraryService implements OnModuleInit {
     const title = common?.title || path.basename(originalName, path.extname(originalName));
     const artistName = common?.artist || common?.albumartist || 'Artista desconhecido';
     const durationSec = metadata?.format.duration ? Math.round(metadata.format.duration) : null;
+
+    // Já existe uma faixa com esse título+artista? Não sobe de novo pro R2 —
+    // devolve a que já existe (o controller ainda favorita ela normalmente).
+    const duplicate = await this.findDuplicateTrack(title, artistName);
+    if (duplicate) return duplicate;
 
     let coverPath: string | null = null;
     const picture = common?.picture?.[0];

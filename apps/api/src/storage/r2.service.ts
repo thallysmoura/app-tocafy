@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -76,5 +77,28 @@ export class R2Service {
     if (!this.client) throw new Error('R2 não configurado');
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
     return getSignedUrl(this.client, command, { expiresIn: expiresInSec });
+  }
+
+  /** Soma bytes + quantidade de objetos no bucket (paginado) — usado pra mostrar
+   * no front quanto já foi usado do plano gratuito do R2. */
+  async getUsage(): Promise<{ bytes: number; objectCount: number }> {
+    if (!this.client) return { bytes: 0, objectCount: 0 };
+    let bytes = 0;
+    let objectCount = 0;
+    let continuationToken: string | undefined;
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      for (const obj of page.Contents ?? []) {
+        bytes += obj.Size ?? 0;
+        objectCount++;
+      }
+      continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (continuationToken);
+    return { bytes, objectCount };
   }
 }

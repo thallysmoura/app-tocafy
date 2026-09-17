@@ -76,6 +76,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const pendingRestoreListenerRef = useRef<(() => void) | null>(null);
   const retriedTrackIdRef = useRef<string | null>(null);
   const playRequestIdRef = useRef(0);
+  // Fica true até o usuário clicar em play/toggle pela primeira vez. Enquanto
+  // true, um erro no <audio> é da restauração passiva do F5 (ex.: faixa
+  // salva no localStorage que já foi apagada/duplicata removida) — não é o
+  // usuário tentando tocar nada, então não mostra erro nem tenta reproduzir.
+  const isRestoringRef = useRef(true);
 
   const initialState = useRef(loadPersistedState()).current;
 
@@ -90,8 +95,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [repeat, setRepeat] = useState<RepeatMode>(initialState?.repeat ?? 'off');
   const [error, setError] = useState<string | null>(null);
 
-  // Retoma a faixa e a posição salvas ao carregar a página, tentando autoplay
-  // de verdade (sem precisar clicar em play de novo depois de um F5).
+  // Retoma a faixa e a posição salvas ao carregar a página — sempre pausado.
+  // Um clique em play continua exatamente de onde parou.
   useEffect(() => {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
@@ -107,34 +112,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       pendingRestoreListenerRef.current = null;
       audio.currentTime = restoredProgressRef.current;
       setProgress(restoredProgressRef.current);
-
-      const resumeOnGesture = () => {
-        audio.muted = false;
-        audio.play().then(() => setIsPlaying(true)).catch(() => undefined);
-      };
-
-      audio
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => {
-          // Autoplay com som bloqueado pelo navegador. Autoplay mudo é sempre
-          // permitido — toca mudo e desmuta logo em seguida (isso não conta
-          // como um novo play() bloqueável, o áudio já está rodando). Só se
-          // isso também falhar (raro) espera o primeiro clique/tecla na
-          // página pra retomar.
-          audio.muted = true;
-          audio
-            .play()
-            .then(() => {
-              setIsPlaying(true);
-              audio.muted = false;
-            })
-            .catch(() => {
-              setIsPlaying(false);
-              window.addEventListener('pointerdown', resumeOnGesture, { once: true });
-              window.addEventListener('keydown', resumeOnGesture, { once: true });
-            });
-        });
     };
     // Guardado numa ref pra poder cancelar: se o usuário tocar outra faixa
     // antes desse "loadedmetadata" disparar, esse listener (once:true) ficaria
@@ -200,6 +177,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   function playIndex(list: Track[], index: number) {
     const track = list[index];
     if (!track) return;
+    isRestoringRef.current = false;
     retriedTrackIdRef.current = null;
     setCurrent(track);
     setQueue(list);
@@ -246,6 +224,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   function toggle() {
     if (!audioRef.current || !current) return;
+    isRestoringRef.current = false;
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -419,6 +398,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         onError={(e) => {
           const mediaError = e.currentTarget.error;
           const audio = e.currentTarget;
+
+          // Erro na restauração passiva do F5 (usuário não clicou em nada
+          // ainda) — provavelmente a faixa salva no localStorage não existe
+          // mais (removida como duplicata, por exemplo). Não é um erro real
+          // de reprodução: limpa o player silenciosamente, sem susto.
+          if (isRestoringRef.current) {
+            setIsPlaying(false);
+            setCurrent(null);
+            setQueue([]);
+            try {
+              window.localStorage.removeItem(STORAGE_KEY);
+            } catch {
+              // localStorage indisponível — sem problema, só não persiste.
+            }
+            return;
+          }
+
           // Código 4 (MEDIA_ERR_SRC_NOT_SUPPORTED) pode vir de uma URL presigned do R2
           // expirada (1h) numa sessão longa — busca a faixa de novo (URL fresca) uma
           // única vez antes de desistir e mostrar o erro pro usuário.

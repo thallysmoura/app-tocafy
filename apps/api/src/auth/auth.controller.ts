@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,15 +7,28 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
+import { IsString, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUserId } from './current-user.decorator';
+
+class GoogleLoginDto {
+  @IsString()
+  @MinLength(10)
+  idToken: string;
+}
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const ACCESS_COOKIE = 'access_token';
 const REFRESH_COOKIE = 'refresh_token';
@@ -59,6 +73,14 @@ export class AuthController {
     return { user };
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('google')
+  async loginWithGoogle(@Body() dto: GoogleLoginDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken, user } = await this.auth.loginWithGoogle(dto.idToken);
+    this.setAuthCookies(res, accessToken, refreshToken, true);
+    return { user };
+  }
+
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const raw = req.cookies?.[REFRESH_COOKIE];
@@ -97,5 +119,19 @@ export class AuthController {
   @Get('me')
   async me(@CurrentUserId() userId: string) {
     return this.auth.me(userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_AVATAR_BYTES } }))
+  async uploadAvatar(
+    @CurrentUserId() userId: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) throw new BadRequestException('Envie uma imagem no campo "file".');
+    if (!ALLOWED_AVATAR_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('Formato inválido. Use JPG, PNG ou WEBP.');
+    }
+    return this.auth.updateAvatar(userId, file.buffer, file.mimetype);
   }
 }

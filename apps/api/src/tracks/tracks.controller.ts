@@ -59,12 +59,17 @@ export class TracksController {
       limits: { fileSize: MAX_UPLOAD_BYTES },
     }),
   )
-  async upload(@UploadedFile() file?: Express.Multer.File) {
+  async upload(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUserId() userId: string,
+  ) {
     if (!file) throw new BadRequestException('Envie um arquivo no campo "file".');
     if (!file.originalname.toLowerCase().endsWith('.mp3')) {
       throw new BadRequestException('Só arquivos .mp3 são suportados.');
     }
-    return this.libraryService.importUploadedTrack(file.buffer, file.originalname);
+    const track = await this.libraryService.importUploadedTrack(file.buffer, file.originalname);
+    await this.likesService.like(userId, track.id);
+    return track;
   }
 
   @Post('youtube')
@@ -74,12 +79,13 @@ export class TracksController {
   }
 
   @Get('youtube/:jobId')
-  async youtubeJobStatus(@Param('jobId') jobId: string) {
+  async youtubeJobStatus(@Param('jobId') jobId: string, @CurrentUserId() userId: string) {
     const job = this.youtubeDownload.consumeJob(jobId);
     if (!job) throw new NotFoundException('Job não encontrado ou já expirado.');
     if (job.status === 'downloading') return { status: 'downloading', percent: job.percent };
     if (job.status === 'error') return { status: 'error', error: job.error };
     const track = await this.libraryService.importUploadedTrack(job.buffer, `${job.title}.mp3`);
+    await this.likesService.like(userId, track.id);
     return { status: 'done', track };
   }
 
@@ -95,7 +101,7 @@ export class TracksController {
     if (track.r2Key && this.r2.isEnabled) {
       const exists = await this.r2.objectExists(track.r2Key);
       if (!exists) {
-        throw new NotFoundException('Arquivo de áudio indisponível no R2 (objeto não encontrado)');
+        throw new NotFoundException('Arquivo de áudio indisponível.');
       }
       const url = await this.r2.getSignedStreamUrl(track.r2Key);
       res.redirect(302, url);

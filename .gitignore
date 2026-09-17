@@ -18,3 +18,6 @@ covers/
 
 # Arquivo solto sem relação com o projeto.
 worker.js
+
+# Chave privada do Firebase Admin (login com Google) — nunca versionar.
+firebase-service-account.json

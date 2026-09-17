@@ -36,7 +36,8 @@ describe('AuthService', () => {
       JWT_ACCESS_SECRET: 'secret',
       JWT_ACCESS_TTL: '15m',
     });
-    service = new AuthService(prisma, jwt, config);
+    const r2 = { isEnabled: false, getSignedStreamUrl: jest.fn(), uploadBuffer: jest.fn() } as any;
+    service = new AuthService(prisma, jwt, config, r2);
   });
 
   it('faz login e emite tokens com credenciais corretas', async () => {

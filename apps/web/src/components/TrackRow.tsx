@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Heart, Play } from 'lucide-react';
+import NowPlayingBars from './NowPlayingBars';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDuration, trackCoverUrl, api } from '@/lib/api';
 import { usePlayer } from '@/context/PlayerContext';
@@ -19,10 +20,17 @@ export default function TrackRow({
   queue: Track[];
   liked?: boolean;
 }) {
-  const { play, current } = usePlayer();
+  const { play, toggle, current, isPlaying } = usePlayer();
   const queryClient = useQueryClient();
   const isActive = current?.id === track.id;
+  const isActivePlaying = isActive && isPlaying;
   const cover = trackCoverUrl(track);
+
+  function handlePlayClick() {
+    // Faixa já é a que está tocando: só pausa/retoma, não recomeça do zero.
+    if (isActive) toggle();
+    else play(track, queue);
+  }
 
   async function toggleLike(e: React.MouseEvent) {
     e.stopPropagation();
@@ -36,20 +44,23 @@ export default function TrackRow({
 
   return (
     <div
-      onClick={() => play(track, queue)}
+      onClick={handlePlayClick}
       className={`group grid cursor-pointer grid-cols-[24px_1fr_32px_56px] items-center gap-2 rounded px-2 py-2 hover:bg-elevatedhover sm:grid-cols-[24px_1fr_1fr_40px_80px] sm:gap-4 sm:px-4 ${
         isActive ? 'text-accent' : 'text-white'
       }`}
     >
-      <span className="text-sm text-muted sm:group-hover:hidden">{index + 1}</span>
+      <span className={`text-sm text-muted ${isActive ? 'hidden' : 'sm:group-hover:hidden'}`}>
+        {index + 1}
+      </span>
       <button
         onClick={(e) => {
           e.stopPropagation();
-          play(track, queue);
+          handlePlayClick();
         }}
-        className="hidden text-sm sm:group-hover:block"
+        className={`text-sm ${isActive ? 'block' : 'hidden sm:group-hover:block'}`}
+        aria-label={isActivePlaying ? 'Pausar' : 'Tocar'}
       >
-        <Play size={14} />
+        {isActivePlaying ? <NowPlayingBars size={14} /> : <Play size={14} />}
       </button>
       <div className="flex items-center gap-3 overflow-hidden">
         <CoverArt src={cover} size={40} />

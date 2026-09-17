@@ -3,14 +3,15 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { StringDecoder } from 'string_decoder';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ytdlp = require('yt-dlp-exec');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ffmpegPath = require('ffmpeg-static');
 
 const YOUTUBE_URL_RE = /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//;
-const PROGRESS_RE = /\[download\]\s+([\d.]+)%/;
-const TITLE_RE = /^TITLE::(.+)$/m;
+const PROGRESS_LINE_RE = /\[download\]\s+([\d.]+)%/;
+const TITLE_LINE_RE = /^TITLE::(.+)$/;
 
 type Job =
   | { status: 'downloading'; percent: number }
@@ -73,17 +74,36 @@ export class YoutubeDownloadService {
         print: 'after_move:TITLE::%(title)s',
       });
 
-      child.stdout?.on('data', (chunk: Buffer) => {
-        const text = chunk.toString();
-        const progressMatch = PROGRESS_RE.exec(text);
+      // StringDecoder (não chunk.toString()) porque um Buffer de 'data' pode
+      // cortar um caractere UTF-8 multi-byte (ex.: aspas curvas ’) bem no meio
+      // — decodificar cada chunk isolado vira "�" no título. Também só
+      // processamos linha completa por linha; uma linha partida entre dois
+      // eventos 'data' não batia no regex e a % ficava presa no último valor
+      // válido lido (parecia "travado" numa porcentagem qualquer).
+      const decoder = new StringDecoder('utf8');
+      let buffered = '';
+      const handleChunk = (chunk: Buffer) => {
+        buffered += decoder.write(chunk);
+        const lines = buffered.split(/\r?\n/);
+        buffered = lines.pop() ?? '';
+        for (const line of lines) processLine(line);
+      };
+      const processLine = (line: string) => {
+        const progressMatch = PROGRESS_LINE_RE.exec(line);
         if (progressMatch) {
           // O download em si conta até 90% — deixa margem visível pra etapa
           // final de extração/conversão pro mp3 (rápida, mas não instantânea).
           const percent = Math.min(90, Math.round(parseFloat(progressMatch[1]) * 0.9));
           this.jobs.set(jobId, { status: 'downloading', percent });
         }
-        const titleMatch = TITLE_RE.exec(text);
+        const titleMatch = TITLE_LINE_RE.exec(line);
         if (titleMatch) title = titleMatch[1].trim();
+      };
+
+      child.stdout?.on('data', handleChunk);
+      child.stdout?.on('end', () => {
+        buffered += decoder.end();
+        if (buffered) processLine(buffered);
       });
 
       await child;
