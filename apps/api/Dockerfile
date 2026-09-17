@@ -2,7 +2,9 @@
 # a API depende do workspace @tocafy/types.
 FROM node:20-slim AS base
 WORKDIR /app
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+# openssl: Prisma. python3/python-is-python3: yt-dlp-exec checa o binário
+# "python" no preinstall (mesmo baixando um yt-dlp standalone depois).
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl python3 python-is-python3 && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 
 FROM base AS build
@@ -20,6 +22,9 @@ COPY --from=build /out/node_modules ./node_modules
 COPY --from=build /out/dist ./dist
 COPY --from=build /out/prisma ./prisma
 COPY --from=build /out/package.json ./package.json
+# Credencial do Firebase Admin (login com Google) — precisa existir em
+# apps/api/firebase-service-account.json antes do build (nunca versionada).
+COPY --from=build /app/apps/api/firebase-service-account.json ./firebase-service-account.json
 COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
     mkdir -p /app/covers && chown -R tocafy:tocafy /app

@@ -13,7 +13,7 @@ via **Cloudflare Tunnel** — sem precisar abrir porta no roteador.
 | Backend (`apps/api`) | NestJS 10 + Prisma 5 + PostgreSQL, Redis (ioredis), JWT (passport-jwt), `@aws-sdk/client-s3` (Cloudflare R2), `music-metadata`/`chokidar`, `yt-dlp-exec` + `ffmpeg-static` (import via link do YouTube), web-push |
 | Frontend (`apps/web`) | Next.js 14 (App Router) + React 18, TanStack Query, Tailwind, PWA |
 | Storage de áudio | Cloudflare R2 (API S3-compatible) — URLs assinadas (presigned), expiração de 1h |
-| Infra | Docker (Postgres + Redis + `cloudflared`), API e Web rodando direto no host |
+| Infra | Tudo em Docker via `docker compose`: Postgres, Redis, `cloudflared`, `api` e `web` |
 
 ## Arquitetura
 
@@ -22,18 +22,17 @@ Cliente (browser/PWA)
    │  https://tocafy.mouora.com
    ▼
 Cloudflare Tunnel (cloudflared, em Docker)
-   ├── tocafy.mouora.com      → host.docker.internal:3002  (apps/web, Next.js)
-   └── tocafy-api.mouora.com  → host.docker.internal:3001  (apps/api, NestJS)
+   ├── tocafy.mouora.com      → web:3002   (apps/web, Next.js)
+   └── tocafy-api.mouora.com  → api:3001   (apps/api, NestJS)
                                         │
                                         ├── PostgreSQL (Docker, porta 5432)
                                         ├── Redis (Docker, porta 6379)
                                         └── Cloudflare R2 (arquivos .mp3)
 ```
 
-`api` e `web` **não rodam em container** — só `postgres`, `redis` e `cloudflared` ficam no
-Docker. Isso deixa build/deploy/hot-reload mais simples (sem rebuild de imagem a cada mudança)
-e ainda expõe tudo publicamente através do túnel, que aponta para o host via
-`host.docker.internal`.
+Todos os serviços rodam em containers na mesma rede do `docker-compose.yml` — `api`/`web` se
+comunicam com `postgres`/`redis` pelo nome do serviço (não `localhost`), e o `cloudflared`
+aponta pro nome dos serviços `web`/`api` também.
 
 ## Rodando o projeto
 
@@ -57,42 +56,38 @@ Principais variáveis:
 
 | Variável | Descrição |
 |---|---|
-| `DATABASE_URL` | Postgres. Ao rodar `api`/`web` no host (fora do Docker), use `localhost:5432` |
-| `REDIS_URL` | Idem, `localhost:6379` |
+| `DATABASE_URL` | Postgres. Com tudo em Docker, use o nome do serviço: `postgres:5432` |
+| `REDIS_URL` | Idem, `redis:6379` |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Segredos de assinatura do JWT — gere valores aleatórios próprios |
 | `CORS_ORIGINS` | Origens permitidas pela API, separadas por vírgula |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Credenciais do bucket Cloudflare R2 (token com permissão *Object Read & Write*, escopo restrito ao bucket) |
 | `NEXT_PUBLIC_API_URL` | URL pública da API que o front consome |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web Push — gere com `npx web-push generate-vapid-keys` |
 | `MUSIC_DIR` | Pasta local opcional com MP3s pra importar automaticamente |
+| `NEXT_PUBLIC_FIREBASE_*` (6 vars) | Config pública do app Firebase — login com Google. Pega no console do Firebase (Configurações do projeto → Geral → seus apps) |
 
-### 3. Subir Postgres + Redis + Cloudflare Tunnel
+**Login com Google:** além das `NEXT_PUBLIC_FIREBASE_*` (usadas no build do `web`, injetadas via
+`build.args` no `docker-compose.yml`), o backend precisa da credencial do **Firebase Admin**:
+baixe o JSON em Firebase Console → Configurações do projeto → Contas de serviço → "Gerar nova
+chave privada", salve como `apps/api/firebase-service-account.json` (gitignored, nunca
+versionar) **antes** de rodar `docker compose build api` — o Dockerfile copia esse arquivo pra
+dentro da imagem.
+
+### 3. Subir tudo
 
 ```bash
+docker compose build api web   # primeira vez / após mudar código de api ou web
 docker compose up -d
-docker compose ps   # deve mostrar postgres, redis e cloudflared "healthy"/"up"
+docker compose ps   # postgres, redis, cloudflared, api, web
 ```
 
-### 4. Rodar a API e o Web (direto no host, sem Docker)
+Rodando localmente sem o Cloudflare Tunnel: `http://localhost:3002` (web) e
+`http://localhost:3001` (api).
 
-```bash
-pnpm install
-
-# API
-cd apps/api
-pnpm prisma:generate
-pnpm prisma:migrate:dev   # primeira vez / após mudar o schema
-pnpm build
-pnpm start                # produção, porta 3001 — ou `pnpm start:dev` pra hot-reload
-
-# Web (outro terminal)
-cd apps/web
-pnpm build
-pnpm start                # produção, porta 3002 — ou `pnpm dev` pra hot-reload
-```
-
-Sem Cloudflare Tunnel, a aplicação já funciona localmente em `http://localhost:3002`
-(API em `http://localhost:3001`).
+Pra desenvolvimento com hot-reload, dá pra rodar `api`/`web` fora do Docker (usando
+`localhost` no `DATABASE_URL`/`REDIS_URL` e `pnpm --filter tocafy-api start:dev` /
+`pnpm --filter tocafy-web dev`), mas o `docker-compose.yml` deste repo já assume produção
+com tudo containerizado.
 
 ## Cloudflare Tunnel (expor publicamente)
 
@@ -111,18 +106,14 @@ Sem Cloudflare Tunnel, a aplicação já funciona localmente em `http://localhos
 
    ingress:
      - hostname: seu-dominio.com
-       service: http://host.docker.internal:3002
+       service: http://web:3002
      - hostname: api.seu-dominio.com
-       service: http://host.docker.internal:3001
+       service: http://api:3001
      - service: http_status:404
    ```
 4. Ajuste em `docker-compose.yml` o nome do arquivo `.json` de credenciais montado no serviço
    `cloudflared` para bater com o `<TUNNEL_ID>` gerado no passo 1.
-5. `docker compose up -d cloudflared` (ou `docker compose up -d` geral) sobe o túnel.
-
-`host.docker.internal` é resolvido automaticamente pelo Docker Desktop; em Linux puro, o
-`extra_hosts: ['host.docker.internal:host-gateway']` já presente no `docker-compose.yml`
-cobre isso (Docker 20.10+).
+5. `docker compose up -d` sobe tudo, incluindo o túnel.
 
 ## Estrutura
 
