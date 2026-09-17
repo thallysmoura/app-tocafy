@@ -62,13 +62,7 @@ export default function PlayerBar() {
   } = usePlayer();
   const [expanded, setExpanded] = useState(false);
 
-  if (!current) {
-    return (
-      <footer className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] flex h-20 items-center justify-center border-t border-elevatedhover bg-elevated text-sm text-muted sm:bottom-0">
-        Escolha uma música para tocar
-      </footer>
-    );
-  }
+  if (!current) return null;
 
   const cover = trackCoverUrl(current);
   const RepeatIcon = repeat === 'repeat-one' ? Repeat1 : Repeat;
