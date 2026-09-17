@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Music, UploadCloud } from 'lucide-react';
+import { Clipboard, Music, UploadCloud } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import BackButton from '@/components/BackButton';
 import StorageUsageCard from '@/components/StorageUsageCard';
@@ -13,6 +13,7 @@ type StorageUsage = { bytes: number; objectCount: number; limitBytes: number; pe
 
 export default function UploadPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -47,12 +48,31 @@ export default function UploadPage() {
     uploadTrack.mutate(file);
   }
 
+  function submitYoutubeUrl(url: string) {
+    const trimmed = url.trim();
+    if (!trimmed || ytBusy) return;
+    startYoutubeDownload(trimmed);
+    setYoutubeUrl('');
+  }
+
   function handleYoutubeSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const url = youtubeUrl.trim();
-    if (!url || ytBusy) return;
-    startYoutubeDownload(url);
-    setYoutubeUrl('');
+    submitYoutubeUrl(youtubeUrl);
+  }
+
+  async function handlePasteClick() {
+    setPasteError(null);
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) return;
+      // Já dispara o download direto — no touch evita ter que abrir o
+      // teclado, colar e ainda clicar em "Baixar" separado.
+      setYoutubeUrl(text.trim());
+      if (ytError) clearYtError();
+      submitYoutubeUrl(text);
+    } catch {
+      setPasteError('Não foi possível acessar a área de transferência — cole manualmente no campo.');
+    }
   }
 
   return (
@@ -104,6 +124,16 @@ export default function UploadPage() {
             className="flex-1 rounded bg-elevated px-4 py-2 text-white placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
           />
           <button
+            type="button"
+            onClick={handlePasteClick}
+            disabled={ytBusy}
+            className="flex items-center gap-2 rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50"
+            title="Colar da área de transferência e baixar"
+          >
+            <Clipboard size={16} />
+            Colar
+          </button>
+          <button
             type="submit"
             disabled={!youtubeUrl.trim() || ytBusy}
             className="flex items-center gap-2 rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50"
@@ -125,6 +155,7 @@ export default function UploadPage() {
           </div>
         )}
         {ytError && <p className="mt-3 text-sm text-red-400">{ytError}</p>}
+        {pasteError && <p className="mt-3 text-sm text-red-400">{pasteError}</p>}
       </div>
     </div>
   );
