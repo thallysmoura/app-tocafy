@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.next/
+
+# Qualquer variante de env real (.env, .env.local, apps/*/.env, apps/*/.env.local, etc.)
+# — só os .example ficam versionados.
+*.env
+*.env.local
+!*.env.example
+
+covers/
+.cloudflared/
+*.host.log
+*.tsbuildinfo
+
+# Config local do Claude Code — não faz parte do projeto.
+.claude/
+
+# Arquivo solto sem relação com o projeto.
+worker.js

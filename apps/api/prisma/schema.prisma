@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Artist {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  albums Album[]
+  tracks Track[]
+}
+
+model Album {
+  id        String   @id @default(uuid())
+  title     String
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artistId  String
+  coverPath String?
+  tracks    Track[]
+
+  @@unique([title, artistId])
+  @@index([artistId])
+}
+
+model Genre {
+  id     String       @id @default(uuid())
+  name   String       @unique
+  tracks TrackGenre[]
+}
+
+model TrackGenre {
+  track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId String
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId String
+
+  @@id([trackId, genreId])
+}
+
+model Track {
+  id          String   @id @default(uuid())
+  filePath    String   @unique
+  title       String
+  artist      Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  artistId    String?
+  album       Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
+  albumId     String?
+  durationSec Int?
+  coverPath   String?
+  r2Key       String?  @unique
+  addedAt     DateTime @default(now())
+
+  genres          TrackGenre[]
+  likes           Like[]
+  playlistEntries PlaylistTrack[]
+  history         ListeningHistory[]
+
+  @@index([artistId])
+  @@index([albumId])
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String
+  displayName        String
+  mustChangePassword Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  refreshTokens        RefreshToken[]
+  likes                Like[]
+  playlists            Playlist[]
+  history              ListeningHistory[]
+  pushSubscriptions    PushSubscription[]
+  notificationPrefs    NotificationPreference?
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String   @unique
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Like {
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId String
+  likedAt DateTime @default(now())
+
+  @@id([userId, trackId])
+}
+
+model Playlist {
+  id        String   @id @default(uuid())
+  name      String
+  isPublic  Boolean  @default(false)
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  tracks PlaylistTrack[]
+
+  @@index([ownerId])
+}
+
+model PlaylistTrack {
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  playlistId String
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId    String
+  position   Float
+  addedAt    DateTime @default(now())
+
+  @@id([playlistId, trackId])
+  @@index([playlistId, position])
+}
+
+model ListeningHistory {
+  id       String   @id @default(uuid())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  trackId  String
+  playedAt DateTime @default(now())
+
+  @@index([userId, playedAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model NotificationPreference {
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String  @id
+  newTracksFromArtists Boolean @default(true)
+  playlistUpdates      Boolean @default(true)
+}

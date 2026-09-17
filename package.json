@@ -1,0 +1,12 @@
+{
+  "name": "tocafy",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter tocafy-api start:dev",
+    "dev:web": "pnpm --filter tocafy-web dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
+  }
+}
