@@ -65,7 +65,7 @@ export default function TrackRow({
       <div className="flex items-center gap-3 overflow-hidden">
         <CoverArt src={cover} size={40} />
         <div className="overflow-hidden">
-          <div className="truncate font-medium">{track.title}</div>
+          <div className="truncate text-sm font-medium sm:text-base">{track.title}</div>
           {track.artist && track.source !== 'audius' ? (
             <Link
               href={`/artist/${track.artist.id}`}
