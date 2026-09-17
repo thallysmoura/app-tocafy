@@ -38,22 +38,27 @@ export default function AccessLogMap({ points }: { points: AccessLogPoint[] }) {
   const center: [number, number] = [points[0].latitude, points[0].longitude];
 
   return (
-    <MapContainer center={center} zoom={4} scrollWheelZoom={false} className="h-72 w-full rounded-lg">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {points.map((p) => (
-        <Marker key={p.id} position={[p.latitude, p.longitude]} icon={icon}>
-          <Popup>
-            {p.success ? 'Login bem-sucedido' : 'Tentativa falha'}
-            <br />
-            {[p.city, p.country].filter(Boolean).join(', ') || 'Local desconhecido'}
-            <br />
-            {new Date(p.createdAt).toLocaleString('pt-BR')}
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+    // isolate cria um novo contexto de empilhamento: os z-index internos do
+    // Leaflet (panes/controles chegam a 700+) ficam contidos aqui dentro e
+    // não vazam por cima do header fixo do mobile ao rolar a página.
+    <div className="relative isolate z-0 overflow-hidden rounded-lg">
+      <MapContainer center={center} zoom={4} scrollWheelZoom={false} className="h-72 w-full">
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {points.map((p) => (
+          <Marker key={p.id} position={[p.latitude, p.longitude]} icon={icon}>
+            <Popup>
+              {p.success ? 'Login bem-sucedido' : 'Tentativa falha'}
+              <br />
+              {[p.city, p.country].filter(Boolean).join(', ') || 'Local desconhecido'}
+              <br />
+              {new Date(p.createdAt).toLocaleString('pt-BR')}
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
   );
 }
