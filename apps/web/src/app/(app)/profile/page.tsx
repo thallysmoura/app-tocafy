@@ -3,7 +3,8 @@
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Camera, LogOut, Settings } from 'lucide-react';
+import { Camera, LogOut, Settings, Shield } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import BackButton from '@/components/BackButton';
 import { ApiError, api } from '@/lib/api';
@@ -160,6 +161,14 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      <Link
+        href="/profile/access-log"
+        className="mb-6 flex items-center gap-2 rounded bg-elevated px-4 py-3 text-sm font-semibold text-white hover:bg-elevatedhover"
+      >
+        <Shield size={16} />
+        Log de acesso
+      </Link>
 
       <button
         onClick={logout}

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { cert, initializeApp, type App } from 'firebase-admin/app';
@@ -10,6 +10,9 @@ import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { R2Service } from '../storage/r2.service';
 import { LoginDto } from './dto/login.dto';
+import { AccessLogService } from './access-log.service';
+
+type LoginContext = { ip: string | null; userAgent: string | null };
 
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -40,16 +43,42 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly r2: R2Service,
+    private readonly accessLog: AccessLogService,
   ) {}
 
-  async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-    });
-    if (!user) throw new UnauthorizedException('Credenciais inválidas');
+  async login(dto: LoginDto, ctx: LoginContext) {
+    const email = dto.email.toLowerCase();
 
-    const valid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!valid) throw new UnauthorizedException('Credenciais inválidas');
+    const failedCount = await this.accessLog.recentFailedCount(email);
+    if (this.accessLog.isLockedOut(failedCount)) {
+      throw new ForbiddenException('Muitas tentativas de login. Tente novamente em alguns minutos.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    const valid = user ? await bcrypt.compare(dto.password, user.passwordHash) : false;
+
+    if (!user || !valid) {
+      await this.accessLog.record({
+        email,
+        success: false,
+        userId: user?.id,
+        ip: ctx.ip,
+        userAgent: ctx.userAgent,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+      });
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    await this.accessLog.record({
+      email,
+      success: true,
+      userId: user.id,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+    });
 
     return this.issueTokens(user.id);
   }
@@ -166,6 +195,10 @@ export class AuthService {
     }
 
     return this.issueTokens(user.id);
+  }
+
+  accessLogs(userId: string) {
+    return this.accessLog.list(userId);
   }
 
   private async issueTokens(userId: string) {

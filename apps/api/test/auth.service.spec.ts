@@ -37,8 +37,16 @@ describe('AuthService', () => {
       JWT_ACCESS_TTL: '15m',
     });
     const r2 = { isEnabled: false, getSignedStreamUrl: jest.fn(), uploadBuffer: jest.fn() } as any;
-    service = new AuthService(prisma, jwt, config, r2);
+    const accessLog = {
+      recentFailedCount: jest.fn().mockResolvedValue(0),
+      isLockedOut: jest.fn().mockReturnValue(false),
+      record: jest.fn(),
+      list: jest.fn(),
+    } as any;
+    service = new AuthService(prisma, jwt, config, r2, accessLog);
   });
+
+  const ctx = { ip: '127.0.0.1', userAgent: 'jest' };
 
   it('faz login e emite tokens com credenciais corretas', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'hashed' });
@@ -51,7 +59,10 @@ describe('AuthService', () => {
       mustChangePassword: false,
     });
 
-    const result = await service.login({ email: 'a@a.com', password: 'certa' });
+    const result = await service.login(
+      { email: 'a@a.com', password: 'certa', latitude: -3.1, longitude: -60.0 },
+      ctx,
+    );
 
     expect(result.accessToken).toBe('signed.jwt.token');
     expect(result.refreshToken).toEqual(expect.any(String));
@@ -62,7 +73,7 @@ describe('AuthService', () => {
     (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
     await expect(
-      service.login({ email: 'a@a.com', password: 'errada' }),
+      service.login({ email: 'a@a.com', password: 'errada', latitude: -3.1, longitude: -60.0 }, ctx),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 

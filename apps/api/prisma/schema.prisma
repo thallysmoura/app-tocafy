@@ -79,6 +79,30 @@ model User {
   history              ListeningHistory[]
   pushSubscriptions    PushSubscription[]
   notificationPrefs    NotificationPreference?
+  accessLogs           AccessLog[]
+}
+
+// Log de toda tentativa de login (sucesso ou falha) — segurança/auditoria.
+// userId só é preenchido quando o e-mail bate com uma conta existente, pra
+// mostrar tentativas de invasão daquela conta específica no log dela.
+model AccessLog {
+  id         String   @id @default(uuid())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String?
+  email      String
+  success    Boolean
+  ip         String?
+  country    String?
+  city       String?
+  latitude   Float?
+  longitude  Float?
+  userAgent  String?
+  browser    String?
+  os         String?
+  deviceType String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model RefreshToken {

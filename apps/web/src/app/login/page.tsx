@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
+import { GeolocationDeniedError } from '@/lib/geolocation';
 import { loginSchema, type LoginInput } from '@/lib/validation';
 import Logo from '@/components/Logo';
 
@@ -43,7 +44,8 @@ export default function LoginPage() {
         // ignora — não é crítico.
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Falha ao entrar');
+      if (err instanceof GeolocationDeniedError) setError(err.message);
+      else setError(err instanceof ApiError ? err.message : 'Falha ao entrar');
     }
   }
 
@@ -119,6 +121,10 @@ export default function LoginPage() {
           >
             {isSubmitting ? 'ENTRANDO...' : 'ENTRAR'}
           </button>
+
+          <p className="mt-1 text-center text-xs text-muted">
+            Por segurança, pedimos sua localização para registrar o acesso.
+          </p>
         </form>
       </div>
     </div>

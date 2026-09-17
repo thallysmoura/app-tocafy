@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { signInWithGoogle } from '@/lib/firebase';
+import { getCurrentPosition } from '@/lib/geolocation';
 import type { AuthUser } from '@/lib/types';
 
 type AuthState = {
@@ -45,10 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string, remember = true) => {
+      // Segurança: login só é aceito com localização autorizada — se o
+      // usuário negar ou o navegador não suportar, o erro sobe pro form.
+      const { latitude, longitude } = await getCurrentPosition();
       const { user: loggedUser } = await api.post<{ user: AuthUser }>('/auth/login', {
         email,
         password,
         remember,
+        latitude,
+        longitude,
       });
       setUser(loggedUser);
       router.push(loggedUser.mustChangePassword ? '/profile' : '/');

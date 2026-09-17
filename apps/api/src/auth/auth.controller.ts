@@ -65,12 +65,35 @@ export class AuthController {
     });
   }
 
+  private clientIp(req: Request): string | null {
+    // Atrás do cloudflared, req.ip é o IP interno do container — o IP real
+    // do visitante vem no header que a Cloudflare injeta.
+    const cf = req.headers['cf-connecting-ip'];
+    if (typeof cf === 'string' && cf) return cf;
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded) return forwarded.split(',')[0].trim();
+    return req.ip ?? null;
+  }
+
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } = await this.auth.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, user } = await this.auth.login(dto, {
+      ip: this.clientIp(req),
+      userAgent: req.headers['user-agent'] ?? null,
+    });
     this.setAuthCookies(res, accessToken, refreshToken, dto.remember ?? true);
     return { user };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('access-logs')
+  async accessLogs(@CurrentUserId() userId: string) {
+    return this.auth.accessLogs(userId);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
