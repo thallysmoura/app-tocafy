@@ -70,13 +70,13 @@ export default function TrackRow({
             <Link
               href={`/artist/${track.artist.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="truncate text-sm text-muted hover:underline"
+              className="truncate text-xs text-muted hover:underline"
             >
               {track.artist.name}
             </Link>
           ) : (
-            <div className="truncate text-sm text-muted">
-              {track.artist?.name ?? 'Artista desconhecido'}
+            <div className="truncate text-xs text-muted">
+              {track.artist?.name ?? 'Desconhecido'}
             </div>
           )}
         </div>
@@ -95,7 +95,10 @@ export default function TrackRow({
       {track.source === 'audius' ? (
         <span />
       ) : (
-        <button onClick={toggleLike} className={liked ? 'text-accent' : 'text-muted hover:text-white'}>
+        <button
+          onClick={toggleLike}
+          className={`ml-2 justify-self-end ${liked ? 'text-accent' : 'text-muted hover:text-white'}`}
+        >
           <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
         </button>
       )}
