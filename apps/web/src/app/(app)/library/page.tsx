@@ -1,18 +1,15 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, ListMusic, Plus, UploadCloud } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
+import { Heart, ListMusic, Plus } from 'lucide-react';
+import { api } from '@/lib/api';
 import BackButton from '@/components/BackButton';
-import type { Playlist, Track } from '@/lib/types';
+import type { Playlist } from '@/lib/types';
 
 export default function LibraryPage() {
   const [name, setName] = useState('');
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadedName, setUploadedName] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: playlists, isLoading } = useQuery({
@@ -28,61 +25,11 @@ export default function LibraryPage() {
     },
   });
 
-  const uploadTrack = useMutation({
-    mutationFn: (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return api.upload<Track>('/tracks/upload', formData);
-    },
-    onSuccess: (track) => {
-      setUploadError(null);
-      setUploadedName(track.title);
-      queryClient.invalidateQueries({ queryKey: ['search'] });
-      queryClient.invalidateQueries({ queryKey: ['tracks'] });
-    },
-    onError: (err) => {
-      setUploadedName(null);
-      setUploadError(err instanceof ApiError ? err.message : 'Falha ao enviar a música.');
-    },
-  });
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setUploadedName(null);
-    setUploadError(null);
-    uploadTrack.mutate(file);
-  }
-
   return (
     <div className="px-8 py-6">
       <div className="mb-6 flex items-center gap-3">
         <BackButton />
         <h1 className="text-3xl font-bold text-white">Sua biblioteca</h1>
-      </div>
-
-      <div className="mb-6">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="audio/mpeg,.mp3"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadTrack.isPending}
-          className="flex items-center gap-2 rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50"
-        >
-          <UploadCloud size={16} />
-          {uploadTrack.isPending ? 'Enviando...' : 'Enviar música do computador'}
-        </button>
-        {uploadedName && (
-          <p className="mt-2 text-sm text-accent">&quot;{uploadedName}&quot; enviada com sucesso.</p>
-        )}
-        {uploadError && <p className="mt-2 text-sm text-red-400">{uploadError}</p>}
       </div>
 
       <form

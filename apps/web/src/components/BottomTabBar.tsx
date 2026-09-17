@@ -2,14 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Library, ListMusic, UploadCloud } from 'lucide-react';
+import { Home, Search, Library } from 'lucide-react';
 
 const TABS = [
   { href: '/', label: 'Início', icon: Home },
   { href: '/search', label: 'Buscar', icon: Search },
   { href: '/library', label: 'Sua Biblioteca', icon: Library },
-  { href: '/playlist/new', label: 'Playlist', icon: ListMusic },
-  { href: '/upload', label: 'Upload', icon: UploadCloud },
 ];
 
 export default function BottomTabBar() {
