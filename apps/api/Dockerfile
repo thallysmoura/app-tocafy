@@ -4,7 +4,9 @@ FROM node:20-slim AS base
 WORKDIR /app
 # openssl: Prisma. python3/python-is-python3: yt-dlp-exec checa o binário
 # "python" no preinstall (mesmo baixando um yt-dlp standalone depois).
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl python3 python-is-python3 && rm -rf /var/lib/apt/lists/*
+# ca-certificates: sem isso o yt-dlp (Python) não valida o certificado SSL do
+# YouTube ("CERTIFICATE_VERIFY_FAILED") — node:20-slim não vem com ele.
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl python3 python-is-python3 ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 
 FROM base AS build
