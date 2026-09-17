@@ -10,10 +10,10 @@ via **Cloudflare Tunnel** — sem precisar abrir porta no roteador.
 | Camada | Tecnologia |
 |---|---|
 | Monorepo | pnpm workspaces (`apps/*`, `packages/*`) |
-| Backend (`apps/api`) | NestJS 10 + Prisma 5 + PostgreSQL, Redis (ioredis), JWT (passport-jwt), `@aws-sdk/client-s3` (Cloudflare R2), `music-metadata`/`chokidar`, `yt-dlp-exec` + `ffmpeg-static` (import via link do YouTube), web-push |
+| Backend (`apps/api`) | NestJS 10 + Prisma 5 + PostgreSQL, JWT (passport-jwt), `@aws-sdk/client-s3` (Cloudflare R2), `music-metadata`/`chokidar`, `yt-dlp-exec` + `ffmpeg-static` (import via link do YouTube), web-push |
 | Frontend (`apps/web`) | Next.js 14 (App Router) + React 18, TanStack Query, Tailwind, PWA |
 | Storage de áudio | Cloudflare R2 (API S3-compatible) — URLs assinadas (presigned), expiração de 1h |
-| Infra | Tudo em Docker via `docker compose`: Postgres, Redis, `cloudflared`, `api` e `web` |
+| Infra | Tudo em Docker via `docker compose`: Postgres, `cloudflared`, `api` e `web` |
 
 ## Arquitetura
 
@@ -26,13 +26,12 @@ Cloudflare Tunnel (cloudflared, em Docker)
    └── tocafy-api.mouora.com  → api:3001   (apps/api, NestJS)
                                         │
                                         ├── PostgreSQL (Docker, porta 5432)
-                                        ├── Redis (Docker, porta 6379)
                                         └── Cloudflare R2 (arquivos .mp3)
 ```
 
 Todos os serviços rodam em containers na mesma rede do `docker-compose.yml` — `api`/`web` se
-comunicam com `postgres`/`redis` pelo nome do serviço (não `localhost`), e o `cloudflared`
-aponta pro nome dos serviços `web`/`api` também.
+comunicam com `postgres` pelo nome do serviço (não `localhost`), e o `cloudflared` aponta pro
+nome dos serviços `web`/`api` também.
 
 ## Rodando o projeto
 
@@ -57,7 +56,6 @@ Principais variáveis:
 | Variável | Descrição |
 |---|---|
 | `DATABASE_URL` | Postgres. Com tudo em Docker, use o nome do serviço: `postgres:5432` |
-| `REDIS_URL` | Idem, `redis:6379` |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Segredos de assinatura do JWT — gere valores aleatórios próprios |
 | `CORS_ORIGINS` | Origens permitidas pela API, separadas por vírgula |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Credenciais do bucket Cloudflare R2 (token com permissão *Object Read & Write*, escopo restrito ao bucket) |
@@ -78,7 +76,7 @@ dentro da imagem.
 ```bash
 docker compose build api web   # primeira vez / após mudar código de api ou web
 docker compose up -d
-docker compose ps   # postgres, redis, cloudflared, api, web
+docker compose ps   # postgres, cloudflared, api, web
 ```
 
 Rodando localmente sem o Cloudflare Tunnel: `http://localhost:3002` (web) e
