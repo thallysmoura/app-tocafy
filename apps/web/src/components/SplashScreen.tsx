@@ -22,7 +22,7 @@ export default function SplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-base transition-opacity duration-[350ms] ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-canvas transition-opacity duration-[350ms] ${
         phase === 'out' ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
     >

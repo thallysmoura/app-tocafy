@@ -4,7 +4,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        base: '#121212',
+        // "canvas", não "base": Tailwind já tem uma chave nativa "base" na
+        // escala de fontSize (text-base = 1rem). Nomear a cor "base" faz o
+        // Tailwind gerar um "text-base" ambíguo — em telas ≥640px ele virava
+        // "color: #121212" (a cor do fundo) em vez de tamanho de fonte,
+        // sobrescrevendo qualquer text-white/text-accent e deixando o texto
+        // invisível (mesma cor do fundo) só no desktop.
+        canvas: '#121212',
         elevated: '#1A1A1E',
         elevatedhover: '#26262C',
         accent: '#1DB954',

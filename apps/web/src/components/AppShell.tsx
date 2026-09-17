@@ -9,7 +9,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       <MobileHeader />
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-base pb-[calc(9.5rem+env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top)+3.5rem)] sm:pb-24 sm:pt-0">
+      <main className="flex-1 overflow-y-auto bg-canvas pb-[calc(9.5rem+env(safe-area-inset-bottom))] pt-[calc(env(safe-area-inset-top)+3.5rem)] sm:pb-24 sm:pt-0">
         {children}
       </main>
       <BottomTabBar />
