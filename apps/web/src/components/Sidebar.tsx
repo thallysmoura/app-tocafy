@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Library, Heart, User, UploadCloud } from 'lucide-react';
+import { Home, Search, Library, Heart, User, UploadCloud, Shield } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Logo from './Logo';
 
@@ -17,7 +17,10 @@ const NAV_GROUPS = [
   },
   {
     title: 'Administrativo',
-    items: [{ href: '/upload', label: 'Upload de música', icon: UploadCloud }],
+    items: [
+      { href: '/upload', label: 'Upload de música', icon: UploadCloud },
+      { href: '/profile/access-log', label: 'Log de acesso', icon: Shield },
+    ],
   },
 ];
 

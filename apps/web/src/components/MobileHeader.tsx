@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Menu, User as UserIcon, UploadCloud, LogOut } from 'lucide-react';
+import { Menu, User as UserIcon, UploadCloud, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function MobileHeader() {
@@ -46,6 +46,13 @@ export default function MobileHeader() {
               className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white hover:bg-elevatedhover"
             >
               <UploadCloud size={18} /> Upload de música
+            </Link>
+            <Link
+              href="/profile/access-log"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white hover:bg-elevatedhover"
+            >
+              <Shield size={18} /> Log de acesso
             </Link>
             <button
               onClick={() => {
