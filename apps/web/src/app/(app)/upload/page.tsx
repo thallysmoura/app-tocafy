@@ -113,7 +113,7 @@ export default function UploadPage() {
           Baixa o áudio do vídeo e importa como uma faixa nova. Pode trocar de aba/página que o
           download continua — quando terminar, o aviso aparece na hora.
         </p>
-        <form onSubmit={handleYoutubeSubmit} className="flex gap-2">
+        <form onSubmit={handleYoutubeSubmit} className="flex flex-col gap-2 sm:flex-row">
           <input
             value={youtubeUrl}
             onChange={(e) => {
@@ -121,26 +121,28 @@ export default function UploadPage() {
               if (ytError) clearYtError();
             }}
             placeholder="https://www.youtube.com/watch?v=..."
-            className="flex-1 rounded bg-elevated px-4 py-2 text-white placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+            className="w-full rounded bg-elevated px-4 py-2 text-white placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent sm:flex-1"
           />
-          <button
-            type="button"
-            onClick={handlePasteClick}
-            disabled={ytBusy}
-            className="flex items-center gap-2 rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50"
-            title="Colar da área de transferência e baixar"
-          >
-            <Clipboard size={16} />
-            Colar
-          </button>
-          <button
-            type="submit"
-            disabled={!youtubeUrl.trim() || ytBusy}
-            className="flex items-center gap-2 rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50"
-          >
-            <Music size={16} />
-            {ytBusy ? (ytDisplay > 0 ? `Baixando... ${Math.round(ytDisplay)}%` : 'Preparando...') : 'Baixar'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handlePasteClick}
+              disabled={ytBusy}
+              className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50 sm:flex-none"
+              title="Colar da área de transferência e baixar"
+            >
+              <Clipboard size={16} />
+              Colar
+            </button>
+            <button
+              type="submit"
+              disabled={!youtubeUrl.trim() || ytBusy}
+              className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-elevated px-4 py-2 text-sm font-semibold text-white hover:bg-elevatedhover disabled:opacity-50 sm:flex-none"
+            >
+              <Music size={16} />
+              {ytBusy ? (ytDisplay > 0 ? `Baixando... ${Math.round(ytDisplay)}%` : 'Preparando...') : 'Baixar'}
+            </button>
+          </div>
         </form>
         {ytBusy && (
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-elevated">
