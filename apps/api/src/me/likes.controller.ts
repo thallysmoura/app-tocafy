@@ -27,4 +27,9 @@ export class LikesController {
   history(@CurrentUserId() userId: string) {
     return this.likes.history(userId);
   }
+
+  @Get('top')
+  topPlayed(@CurrentUserId() userId: string) {
+    return this.likes.topPlayed(userId);
+  }
 }

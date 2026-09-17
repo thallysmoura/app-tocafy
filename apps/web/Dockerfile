@@ -33,8 +33,12 @@ RUN pnpm --filter tocafy-web build
 FROM base AS runtime
 ENV NODE_ENV=production
 RUN groupadd -r tocafy && useradd -r -g tocafy tocafy
-COPY --from=build /app/apps/web/public ./public
 COPY --from=build /app/apps/web/.next/standalone ./
+# Standalone não empacota a pasta public/estáticos sozinho — tem que copiar
+# manualmente, e no lugar certo: ao lado de apps/web/server.js (mesma
+# estrutura de pastas do monorepo), não em /app/public (aí vira 404 em tudo:
+# manifest.json, sw.js, ícones, fontes).
+COPY --from=build /app/apps/web/public ./apps/web/public
 COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
 RUN chown -R tocafy:tocafy /app
 USER tocafy

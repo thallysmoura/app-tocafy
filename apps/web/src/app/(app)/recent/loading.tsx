@@ -1,5 +1,5 @@
-import TrackListSkeleton from '@/components/TrackListSkeleton';
+import PageLoader from '@/components/PageLoader';
 
 export default function Loading() {
-  return <TrackListSkeleton />;
+  return <PageLoader />;
 }

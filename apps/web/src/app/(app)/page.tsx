@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Clock, Heart, Play, Shuffle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +8,9 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { usePlayer } from '@/context/PlayerContext';
 import TrackList from '@/components/TrackList';
+import TrackFilterInput from '@/components/TrackFilterInput';
 import SkeletonRows from '@/components/SkeletonRows';
+import { filterTracks } from '@/lib/filterTracks';
 import type { Track } from '@/lib/types';
 
 type LikeEntry = { track: Track; likedAt: string };
@@ -15,13 +18,15 @@ type LikeEntry = { track: Track; likedAt: string };
 export default function HomePage() {
   const { user } = useAuth();
   const { play } = usePlayer();
+  const [query, setQuery] = useState('');
   const { data: likes, isLoading } = useQuery({
     queryKey: ['likes'],
     queryFn: () => api.get<LikeEntry[]>('/me/likes'),
   });
 
-  const tracks = likes?.map((l) => l.track) ?? [];
-  const likedIds = new Set(tracks.map((t) => t.id));
+  const allTracks = likes?.map((l) => l.track) ?? [];
+  const tracks = filterTracks(allTracks, query);
+  const likedIds = new Set(allTracks.map((t) => t.id));
 
   function playSequential() {
     if (tracks.length === 0) return;
@@ -63,7 +68,7 @@ export default function HomePage() {
 
       <div className="mb-3 flex items-center gap-4">
         <h2 className="text-xl font-bold text-white">Músicas Curtidas</h2>
-        {!isLoading && tracks.length > 0 && (
+        {!isLoading && allTracks.length > 0 && (
           <div className="flex items-center gap-2">
             <button
               onClick={playSequential}
@@ -82,12 +87,16 @@ export default function HomePage() {
           </div>
         )}
       </div>
+      {!isLoading && allTracks.length > 0 && <TrackFilterInput value={query} onChange={setQuery} />}
       {isLoading && <SkeletonRows rows={6} />}
-      {!isLoading && tracks.length === 0 && (
+      {!isLoading && allTracks.length === 0 && (
         <p className="text-muted">
           Você ainda não curtiu nenhuma faixa. Vá em <b>Buscar</b>, encontre uma música da sua
           biblioteca e clique no coração.
         </p>
+      )}
+      {!isLoading && allTracks.length > 0 && tracks.length === 0 && (
+        <p className="text-muted">Nenhuma faixa encontrada pra &quot;{query}&quot;.</p>
       )}
       {!isLoading && tracks.length > 0 && <TrackList tracks={tracks} likedIds={likedIds} />}
     </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, ListMusic, Plus } from 'lucide-react';
+import { Heart, ListMusic, Plus, TrendingUp } from 'lucide-react';
 import { api } from '@/lib/api';
 import BackButton from '@/components/BackButton';
 import type { Playlist } from '@/lib/types';
@@ -68,6 +68,13 @@ export default function LibraryPage() {
           </div>
           <div className="truncate font-medium text-white">Músicas Curtidas</div>
           <div className="text-xs text-muted">Sua coleção</div>
+        </Link>
+        <Link href="/top" className="rounded bg-elevated p-4 hover:bg-elevatedhover">
+          <div className="mb-3 flex h-24 items-center justify-center rounded bg-gradient-to-br from-orange-500 to-red-600">
+            <TrendingUp size={32} />
+          </div>
+          <div className="truncate font-medium text-white">Mais tocadas</div>
+          <div className="text-xs text-muted">Top 10</div>
         </Link>
         {isLoading &&
           Array.from({ length: 8 }).map((_, i) => (
