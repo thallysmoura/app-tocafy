@@ -10,6 +10,7 @@ type RecordAttemptInput = {
   userAgent: string | null;
   latitude?: number;
   longitude?: number;
+  type?: 'login' | 'resume';
 };
 
 const FAILED_ATTEMPTS_WINDOW_MS = 15 * 60 * 1000;
@@ -72,17 +73,26 @@ export class AccessLogService {
     let browser: string | null = null;
     let os: string | null = null;
     let deviceType: string | null = null;
+    let engine: string | null = null;
+    let deviceVendor: string | null = null;
+    let deviceModel: string | null = null;
+    let cpuArch: string | null = null;
     if (input.userAgent) {
       const parsed = new UAParser(input.userAgent).getResult();
       browser = parsed.browser.name ? `${parsed.browser.name} ${parsed.browser.version ?? ''}`.trim() : null;
       os = parsed.os.name ? `${parsed.os.name} ${parsed.os.version ?? ''}`.trim() : null;
       deviceType = parsed.device.type ?? 'desktop';
+      engine = parsed.engine.name ? `${parsed.engine.name} ${parsed.engine.version ?? ''}`.trim() : null;
+      deviceVendor = parsed.device.vendor ?? null;
+      deviceModel = parsed.device.model ?? null;
+      cpuArch = parsed.cpu.architecture ?? null;
     }
 
     await this.prisma.accessLog.create({
       data: {
         email: input.email.toLowerCase(),
         success: input.success,
+        type: input.type ?? 'login',
         userId: input.userId,
         ip: input.ip,
         userAgent: input.userAgent,
@@ -93,6 +103,10 @@ export class AccessLogService {
         browser,
         os,
         deviceType,
+        engine,
+        deviceVendor,
+        deviceModel,
+        cpuArch,
       },
     });
   }

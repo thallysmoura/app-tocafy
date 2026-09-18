@@ -201,6 +201,24 @@ export class AuthService {
     return this.accessLog.list(userId);
   }
 
+  // Chamado quando o app abre e o usuário JÁ está autenticado (cookie de
+  // sessão válido) — não passou pela tela de login agora, mas é um retorno
+  // real ao app e vale registrar localização/dispositivo igual a um login.
+  async pingAccess(userId: string, ctx: LoginContext & { latitude?: number; longitude?: number }) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return;
+    await this.accessLog.record({
+      email: user.email,
+      success: true,
+      userId,
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+      latitude: ctx.latitude,
+      longitude: ctx.longitude,
+      type: 'resume',
+    });
+  }
+
   private async issueTokens(userId: string) {
     const accessToken = this.jwt.sign(
       { sub: userId },

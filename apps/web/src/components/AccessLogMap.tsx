@@ -18,8 +18,27 @@ const icon = L.icon({
   iconAnchor: [12, 41],
 });
 
+// Pino numerado — o mesmo número da linha na lista abaixo, pra dar pra saber
+// na hora qual marcador do mapa corresponde a qual entrada do log.
+function numberedIcon(n: number, success: boolean) {
+  const color = success ? '#1DB954' : '#EF4444';
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:28px;height:28px;border-radius:9999px;background:${color};
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;font-weight:700;font-size:12px;
+      border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);
+    ">${n}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
+}
+
 export type AccessLogPoint = {
   id: string;
+  index: number;
   latitude: number;
   longitude: number;
   city: string | null;
@@ -48,9 +67,13 @@ export default function AccessLogMap({ points }: { points: AccessLogPoint[] }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {points.map((p) => (
-          <Marker key={p.id} position={[p.latitude, p.longitude]} icon={icon}>
+          <Marker
+            key={p.id}
+            position={[p.latitude, p.longitude]}
+            icon={numberedIcon(p.index, p.success)}
+          >
             <Popup>
-              {p.success ? 'Login bem-sucedido' : 'Tentativa falha'}
+              #{p.index} · {p.success ? 'Login bem-sucedido' : 'Tentativa falha'}
               <br />
               {[p.city, p.country].filter(Boolean).join(', ') || 'Local desconhecido'}
               <br />

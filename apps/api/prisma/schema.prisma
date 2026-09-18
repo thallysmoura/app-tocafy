@@ -91,16 +91,24 @@ model AccessLog {
   userId     String?
   email      String
   success    Boolean
+  // "login" = entrou com e-mail/senha; "resume" = abriu o app já autenticado
+  // (cookie de sessão válido, sem precisar logar de novo — ex.: voltou hoje
+  // sem ter feito logout ontem).
+  type       String   @default("login")
   ip         String?
   country    String?
   city       String?
   latitude   Float?
   longitude  Float?
   userAgent  String?
-  browser    String?
-  os         String?
-  deviceType String?
-  createdAt  DateTime @default(now())
+  browser      String?
+  os           String?
+  deviceType   String?
+  engine       String? // motor de renderização (Blink, WebKit, Gecko) — ajuda a diferenciar navegadores disfarçados
+  deviceVendor String? // fabricante do aparelho (Apple, Samsung...), quando o UA expõe
+  deviceModel  String? // modelo do aparelho (iPhone, SM-G991B...), quando o UA expõe
+  cpuArch      String? // arquitetura (amd64, arm64...) — incomum em bots/automação simples
+  createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
 }

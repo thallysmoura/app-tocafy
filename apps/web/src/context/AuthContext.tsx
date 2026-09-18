@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,7 +22,7 @@ type AuthState = {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<AuthUser | null>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -35,13 +36,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api.get<AuthUser>('/auth/me');
       setUser(me);
+      return me;
     } catch {
       setUser(null);
+      return null;
     }
   }, []);
 
+  // Assim que o app abre já reconhecendo a sessão (cookie válido, sem passar
+  // pela tela de login agora) registra esse "retorno ao app" no log de
+  // acesso — best-effort, nunca deve travar o carregamento nem mostrar erro.
+  const pingedRef = useRef(false);
   useEffect(() => {
-    refreshUser().finally(() => setLoading(false));
+    refreshUser()
+      .then(async (me) => {
+        if (!me || pingedRef.current) return;
+        pingedRef.current = true;
+        const position = await getCurrentPosition().catch(() => null);
+        await api
+          .post('/auth/ping', position ? { latitude: position.latitude, longitude: position.longitude } : {})
+          .catch(() => undefined);
+      })
+      .finally(() => setLoading(false));
   }, [refreshUser]);
 
   const login = useCallback(

@@ -15,7 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
-import { IsString, MinLength } from 'class-validator';
+import { IsLatitude, IsLongitude, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -25,6 +25,16 @@ class GoogleLoginDto {
   @IsString()
   @MinLength(10)
   idToken: string;
+}
+
+class PingDto {
+  @IsOptional()
+  @IsLatitude()
+  latitude?: number;
+
+  @IsOptional()
+  @IsLongitude()
+  longitude?: number;
 }
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -94,6 +104,21 @@ export class AuthController {
   @Get('access-logs')
   async accessLogs(@CurrentUserId() userId: string) {
     return this.auth.accessLogs(userId);
+  }
+
+  // Disparado pelo front assim que o app abre e já reconhece a sessão (sem
+  // passar pelo formulário de login) — registra o "retorno ao app" no log.
+  @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('ping')
+  async ping(@Body() dto: PingDto, @CurrentUserId() userId: string, @Req() req: Request) {
+    await this.auth.pingAccess(userId, {
+      ip: this.clientIp(req),
+      userAgent: req.headers['user-agent'] ?? null,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+    });
+    return { ok: true };
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
