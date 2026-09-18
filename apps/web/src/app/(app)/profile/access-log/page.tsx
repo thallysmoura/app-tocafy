@@ -88,8 +88,10 @@ export default function AccessLogPage() {
               log.success ? '' : 'border border-red-500/40'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className={`flex items-center gap-2 font-semibold ${log.success ? 'text-white' : 'text-red-400'}`}>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span
+                className={`flex min-w-0 flex-wrap items-center gap-2 font-semibold ${log.success ? 'text-white' : 'text-red-400'}`}
+              >
                 <span
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${
                     log.success ? 'bg-accent' : 'bg-red-500'
@@ -98,18 +100,20 @@ export default function AccessLogPage() {
                 >
                   {log.index}
                 </span>
-                {log.success
-                  ? log.type === 'resume'
-                    ? 'Retorno ao app'
-                    : 'Login bem-sucedido'
-                  : 'Tentativa falha'}
+                <span className="truncate">
+                  {log.success
+                    ? log.type === 'resume'
+                      ? 'Retorno ao app'
+                      : 'Login bem-sucedido'
+                    : 'Tentativa falha'}
+                </span>
                 {log.isNewIp && (
-                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400">
+                  <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400">
                     IP novo
                   </span>
                 )}
               </span>
-              <span className="text-xs text-muted">
+              <span className="shrink-0 text-xs text-muted">
                 {new Date(log.createdAt).toLocaleString('pt-BR')}
               </span>
             </div>

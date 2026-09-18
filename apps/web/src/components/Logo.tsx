@@ -1,4 +1,13 @@
+import { useId } from 'react';
+
 export default function Logo({ size = 56 }: { size?: number }) {
+  // IDs únicos por instância — o Safari/WebKit falha em resolver o gradiente
+  // (deixa o preenchimento invisível) quando há vários <Logo/> na mesma
+  // página (sidebar, header, splash) usando o mesmo id de <linearGradient>.
+  const uid = useId().replace(/:/g, '');
+  const brandGradientId = `tocafy-brand-green-${uid}`;
+  const shineGradientId = `tocafy-shine-${uid}`;
+
   return (
     <svg
       width={size}
@@ -9,17 +18,17 @@ export default function Logo({ size = 56 }: { size?: number }) {
       aria-label="Tocafy"
     >
       <defs>
-        <linearGradient id="tocafy-brand-green" x1="68" y1="62" x2="452" y2="462" gradientUnits="userSpaceOnUse">
+        <linearGradient id={brandGradientId} x1="68" y1="62" x2="452" y2="462" gradientUnits="userSpaceOnUse">
           <stop stopColor="#38EE83" />
           <stop offset="1" stopColor="#0BBE59" />
         </linearGradient>
-        <linearGradient id="tocafy-shine" x1="98" y1="76" x2="390" y2="420" gradientUnits="userSpaceOnUse">
+        <linearGradient id={shineGradientId} x1="98" y1="76" x2="390" y2="420" gradientUnits="userSpaceOnUse">
           <stop stopColor="#FFFFFF" stopOpacity="0.20" />
           <stop offset="0.58" stopColor="#FFFFFF" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect x="56" y="46" width="400" height="400" rx="130" fill="url(#tocafy-brand-green)" />
-      <rect x="56" y="46" width="400" height="400" rx="130" fill="url(#tocafy-shine)" />
+      <rect x="56" y="46" width="400" height="400" rx="130" fill={`url(#${brandGradientId})`} />
+      <rect x="56" y="46" width="400" height="400" rx="130" fill={`url(#${shineGradientId})`} />
       <rect
         x="59"
         y="49"
