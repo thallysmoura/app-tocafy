@@ -99,7 +99,7 @@ export default function NewPlaylistPage() {
         {tracks.map((track) => (
           <label
             key={track.id}
-            className="flex cursor-pointer items-center gap-3 rounded px-2 py-2 hover:bg-elevatedhover"
+            className="flex cursor-pointer items-center gap-3 rounded px-2 py-2"
           >
             <input
               type="checkbox"

@@ -1,4 +1,4 @@
-const VERSION = 'tocafy-v1';
+const VERSION = 'tocafy-v2';
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

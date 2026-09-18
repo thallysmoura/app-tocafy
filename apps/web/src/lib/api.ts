@@ -18,6 +18,16 @@ async function doRefresh(): Promise<boolean> {
   return res.ok;
 }
 
+// Renova o access token (cookie httpOnly) fora do wrapper `request()` — usado
+// pelo <audio>, que faz a requisição de stream direto pelo browser e nunca
+// passa pelo retry-on-401 automático do `request()` abaixo.
+export function refreshSession(): Promise<boolean> {
+  refreshPromise ??= doRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
 async function request<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
   // FormData (upload de arquivo) precisa que o browser defina o Content-Type
   // sozinho (com o boundary do multipart) — não fixamos application/json nesse caso.

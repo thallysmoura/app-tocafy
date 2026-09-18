@@ -67,7 +67,7 @@ export default function PlaylistPage({ params }: { params: { id: string } }) {
         {tracks.map((track, index) => (
           <div
             key={track.id}
-            className="grid grid-cols-[1fr_auto] items-center gap-4 rounded px-4 py-2 hover:bg-elevatedhover"
+            className="grid grid-cols-[1fr_auto] items-center gap-4 rounded px-4 py-2"
           >
             <div className="flex items-center gap-3 overflow-hidden">
               <CoverArt src={trackCoverUrl(track)} size={40} />
@@ -120,7 +120,7 @@ export default function PlaylistPage({ params }: { params: { id: string } }) {
             {suggestions.map((track) => (
               <div
                 key={track.id}
-                className="grid grid-cols-[1fr_auto] items-center gap-4 rounded px-4 py-2 hover:bg-elevatedhover"
+                className="grid grid-cols-[1fr_auto] items-center gap-4 rounded px-4 py-2"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
                   <CoverArt src={trackCoverUrl(track)} size={40} />

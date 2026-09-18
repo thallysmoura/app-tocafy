@@ -45,7 +45,7 @@ export default function TrackRow({
   return (
     <div
       onClick={handlePlayClick}
-      className={`group grid cursor-pointer grid-cols-[24px_1fr_32px_56px] items-center gap-2 rounded px-2 py-2 hover:bg-elevatedhover sm:grid-cols-[24px_1fr_1fr_40px_80px] sm:gap-4 sm:px-4 ${
+      className={`group grid cursor-pointer grid-cols-[24px_1fr_32px_56px] items-center gap-2 rounded px-2 py-2 sm:grid-cols-[24px_1fr_1fr_40px_80px] sm:gap-4 sm:px-4 ${
         isActive ? 'text-accent' : 'text-white'
       }`}
     >

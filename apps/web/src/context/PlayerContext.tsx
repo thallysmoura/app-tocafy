@@ -9,7 +9,7 @@ import {
   useState,
   ReactNode,
 } from 'react';
-import { trackCoverUrl, trackStreamUrl } from '@/lib/api';
+import { refreshSession, trackCoverUrl, trackStreamUrl } from '@/lib/api';
 import { canonicalOrder, computeNextIndex, computePrevIndex, shuffleKeepingCurrent } from '@/lib/queue';
 import type { RepeatMode, Track } from '@/lib/types';
 
@@ -416,16 +416,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           }
 
           // Código 4 (MEDIA_ERR_SRC_NOT_SUPPORTED) pode vir de uma URL presigned do R2
-          // expirada (1h) numa sessão longa — busca a faixa de novo (URL fresca) uma
-          // única vez antes de desistir e mostrar o erro pro usuário.
+          // expirada, ou — o caso mais comum — do access token (15min) ter expirado:
+          // o <audio> faz a requisição direto pelo browser, sem passar pelo
+          // retry-on-401 do lib/api.ts, então uma vez expirado TODAS as faixas
+          // seguintes falhavam do mesmo jeito até recarregar a página. Renova a
+          // sessão e busca a faixa de novo (URL fresca) uma única vez antes de
+          // desistir e mostrar o erro pro usuário.
           if (mediaError?.code === 4 && current && retriedTrackIdRef.current !== current.id) {
             retriedTrackIdRef.current = current.id;
-            audio.src = trackStreamUrl(current);
-            audio.load();
-            audio
-              .play()
-              .then(() => setIsPlaying(true))
-              .catch(() => setIsPlaying(false));
+            refreshSession().finally(() => {
+              if (retriedTrackIdRef.current !== current.id) return;
+              audio.src = trackStreamUrl(current);
+              audio.load();
+              audio
+                .play()
+                .then(() => setIsPlaying(true))
+                .catch(() => setIsPlaying(false));
+            });
             return;
           }
           setIsPlaying(false);
