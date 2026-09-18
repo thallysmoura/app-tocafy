@@ -35,26 +35,6 @@ services:
     environment:
       MUSIC_DIR: /music
 
-  web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
-        NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY}
-        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
-        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
-        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
-        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
-        NEXT_PUBLIC_FIREBASE_APP_ID: ${NEXT_PUBLIC_FIREBASE_APP_ID}
-    restart: unless-stopped
-    env_file: .env
-    depends_on:
-      - api
-    ports:
-      - '3002:3002'
-
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
@@ -62,9 +42,10 @@ services:
     volumes:
       - ./.cloudflared/tunnel-config.docker.yml:/etc/cloudflared/config.yml:ro
       - ./.cloudflared/4af0465b-0012-499f-b041-83412d35fd20.json:/etc/cloudflared/creds.json:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     depends_on:
       - api
-      - web
 
 volumes:
   tocafy_postgres_data:
