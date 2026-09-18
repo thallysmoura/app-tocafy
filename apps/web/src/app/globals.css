@@ -59,13 +59,3 @@ input[type='range'] {
 .now-playing-bar {
   animation: now-playing-bar 0.9s ease-in-out infinite;
 }
-
-/* Spinner de carregamento entre navegações de página. */
-@keyframes page-loader-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.page-loader-ring {
-  animation: page-loader-spin 3s linear infinite;
-}
