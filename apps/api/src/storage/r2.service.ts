@@ -11,11 +11,18 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs';
 
 /** Wrapper fino sobre o S3Client apontado pro Cloudflare R2 (API S3-compatible). */
+const OBJECT_EXISTS_TTL_MS = 5 * 60 * 1000;
+
 @Injectable()
 export class R2Service {
   private readonly logger = new Logger(R2Service.name);
   private readonly client: S3Client | null;
   private readonly bucket: string;
+  // Evita bater no R2 (HeadObject) a cada troca de faixa — a existência do
+  // arquivo não muda no meio de uma sessão de escuta, então cachear por
+  // alguns minutos tira uma viagem de rede inteira do caminho crítico do
+  // "próxima música" sem perder a checagem de segurança.
+  private readonly existsCache = new Map<string, { exists: boolean; at: number }>();
 
   constructor(private readonly config: ConfigService) {
     const accountId = this.config.get<string>('R2_ACCOUNT_ID');
@@ -65,12 +72,19 @@ export class R2Service {
    * (o <audio> do browser não decodifica isso e mostra "código 4"). */
   async objectExists(key: string): Promise<boolean> {
     if (!this.client) return false;
+
+    const cached = this.existsCache.get(key);
+    if (cached && Date.now() - cached.at < OBJECT_EXISTS_TTL_MS) return cached.exists;
+
+    let exists: boolean;
     try {
       await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
-      return true;
+      exists = true;
     } catch {
-      return false;
+      exists = false;
     }
+    this.existsCache.set(key, { exists, at: Date.now() });
+    return exists;
   }
 
   async getSignedStreamUrl(key: string, expiresInSec = 3600): Promise<string> {
