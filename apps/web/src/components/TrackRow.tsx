@@ -68,7 +68,7 @@ export default function TrackRow({
           <div className={`truncate text-sm font-medium sm:text-base ${isActive ? 'text-accent' : 'text-white'}`}>
             {track.title}
           </div>
-          {track.artist && track.source !== 'audius' ? (
+          {track.artist && track.artist.name !== 'Artista desconhecido' && track.source !== 'audius' ? (
             <Link
               href={`/artist/${track.artist.id}`}
               onClick={(e) => e.stopPropagation()}
