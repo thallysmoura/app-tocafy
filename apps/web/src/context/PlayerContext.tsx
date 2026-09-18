@@ -229,14 +229,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      // Mesmo token de playIndex(): se o usuário clicar rápido (ex.: dar play
+      // de novo antes do <audio> terminar de carregar a troca de faixa
+      // anterior), esse play() aqui pode chegar atrasado e disparar um erro
+      // (ex.: "no supported sources") de uma tentativa que já foi superada —
+      // só mostra erro se essa ainda for a requisição mais recente.
+      const requestId = ++playRequestIdRef.current;
       audioRef.current
         .play()
         .then(() => {
+          if (playRequestIdRef.current !== requestId) return;
           setIsPlaying(true);
           broadcastPlaying();
         })
         .catch((err) => {
-          if (err.name === 'AbortError') return;
+          if (playRequestIdRef.current !== requestId) return;
+          setIsPlaying(false);
           setError(`Não foi possível tocar: ${err.message}`);
         });
     }
