@@ -68,7 +68,10 @@ export default function PlayerBar() {
   const RepeatIcon = repeat === 'repeat-one' ? Repeat1 : Repeat;
 
   return (
-    <footer className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] flex flex-col justify-end border-t border-elevatedhover bg-elevated sm:bottom-0 sm:h-20">
+    <footer
+      id="player-bar"
+      className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] flex flex-col justify-end border-t border-elevatedhover bg-elevated sm:bottom-0 sm:h-20"
+    >
       {error && (
         <div className="absolute -top-8 left-0 right-0 bg-red-500/90 px-4 py-1 text-center text-xs text-white">
           {error}

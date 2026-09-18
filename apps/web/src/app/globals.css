@@ -113,3 +113,9 @@ input[type='range'] {
 .button-press-pop {
   animation: button-press-pop 0.4s ease-out;
 }
+
+/* Esconde a barra do player enquanto a tela de identificar música está
+   ouvindo/analisando — ela ficava por cima do botão Cancelar. */
+body.hide-player-bar #player-bar {
+  display: none;
+}

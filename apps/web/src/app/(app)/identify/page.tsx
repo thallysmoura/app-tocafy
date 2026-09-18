@@ -112,8 +112,15 @@ export default function IdentifyPage() {
 
   const isBusy = status === 'listening' || status === 'analyzing';
 
+  // A barra do player fica por cima do botão Cancelar do overlay — esconde
+  // ela enquanto estiver ouvindo/identificando.
+  useEffect(() => {
+    document.body.classList.toggle('hide-player-bar', isBusy || result !== null);
+    return () => document.body.classList.remove('hide-player-bar');
+  }, [isBusy, result]);
+
   return (
-    <div className="mx-auto max-w-md px-8 py-6 text-center">
+    <div className="px-8 py-6">
       <div className="relative z-10 mb-6 flex w-full items-center gap-3">
         <BackButton />
         <h1 className="text-3xl font-bold text-white">Identificar música</h1>
@@ -165,41 +172,6 @@ export default function IdentifyPage() {
               <p className="text-base font-bold text-white">Toque para começar</p>
 
               {error && <p className="mt-6 text-sm text-red-400">{error}</p>}
-
-              {result && (
-                <div className="mt-6 w-full rounded-2xl bg-elevated p-5">
-                  {result.found ? (
-                    <>
-                      <div className="flex items-center gap-4">
-                        {result.coverUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={result.coverUrl} alt="" className="h-16 w-16 rounded object-cover" />
-                        ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded bg-elevatedhover text-muted">
-                            <Mic size={24} />
-                          </div>
-                        )}
-                        <div className="min-w-0 text-left">
-                          <div className="truncate font-bold text-white">{result.title}</div>
-                          <div className="truncate text-sm text-muted">{result.artist}</div>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/search?q=${encodeURIComponent(`${result.title} ${result.artist}`)}`}
-                        className="mt-4 flex items-center justify-center gap-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accenthover"
-                      >
-                        <Search size={16} />
-                        Buscar no Tocafy
-                      </Link>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted">
-                      Não conseguimos identificar essa música. Tente de novo mais perto do som e
-                      num ambiente mais silencioso.
-                    </p>
-                  )}
-                </div>
-              )}
             </>
           ) : (
             <>
@@ -229,6 +201,73 @@ export default function IdentifyPage() {
           )}
         </div>
       </div>
+
+      {result && (
+        <div
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 px-8 text-center backdrop-blur-sm"
+          onClick={() => setResult(null)}
+        >
+          <button
+            onClick={() => setResult(null)}
+            className="absolute right-5 top-[calc(env(safe-area-inset-top)+1.25rem)] flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            aria-label="Fechar"
+          >
+            <X size={20} />
+          </button>
+
+          <div onClick={(e) => e.stopPropagation()} className="flex w-full max-w-xs flex-col items-center">
+            {result.found ? (
+              <>
+                {result.coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={result.coverUrl}
+                    alt=""
+                    className="h-52 w-52 rounded-xl object-cover shadow-2xl"
+                  />
+                ) : (
+                  <div className="flex h-52 w-52 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-emerald-800 shadow-2xl">
+                    <Logo size={72} />
+                  </div>
+                )}
+                <h2 className="mt-6 truncate text-xl font-bold text-white">{result.title}</h2>
+                <p className="mt-1 truncate text-sm text-white/60">{result.artist}</p>
+
+                <Link
+                  href={`/search?q=${encodeURIComponent(`${result.title} ${result.artist}`)}`}
+                  onClick={() => setResult(null)}
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-white hover:bg-accenthover"
+                >
+                  <Search size={16} />
+                  Buscar no Tocafy
+                </Link>
+                <button
+                  onClick={() => setResult(null)}
+                  className="mt-3 w-full rounded-full py-3 text-sm font-bold text-white/70 hover:text-white"
+                >
+                  Fechar
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex h-52 w-52 items-center justify-center rounded-xl bg-elevated shadow-2xl">
+                  <Mic size={56} className="text-muted" />
+                </div>
+                <h2 className="mt-6 text-lg font-bold text-white">Não identificamos essa música</h2>
+                <p className="mt-1 text-sm text-white/60">
+                  Tente de novo mais perto do som e num ambiente mais silencioso.
+                </p>
+                <button
+                  onClick={() => setResult(null)}
+                  className="mt-8 w-full rounded-full bg-accent py-3 text-sm font-bold text-white hover:bg-accenthover"
+                >
+                  Fechar
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
