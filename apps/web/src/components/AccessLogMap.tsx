@@ -54,14 +54,22 @@ export default function AccessLogMap({ points }: { points: AccessLogPoint[] }) {
 
   if (points.length === 0) return null;
 
-  const center: [number, number] = [points[0].latitude, points[0].longitude];
+  // Enquadra automaticamente todos os pinos: se os acessos forem pertinho um
+  // do outro, dá zoom pra dar pra distinguir os blocos; se estiverem espalhados
+  // (cidades/países diferentes), mantém tudo visível sem forçar zoom.
+  const bounds = L.latLngBounds(points.map((p) => [p.latitude, p.longitude] as [number, number]));
 
   return (
     // isolate cria um novo contexto de empilhamento: os z-index internos do
     // Leaflet (panes/controles chegam a 700+) ficam contidos aqui dentro e
     // não vazam por cima do header fixo do mobile ao rolar a página.
     <div className="relative isolate z-0 overflow-hidden rounded-lg">
-      <MapContainer center={center} zoom={4} scrollWheelZoom={false} className="h-72 w-full">
+      <MapContainer
+        bounds={bounds}
+        boundsOptions={{ padding: [40, 40], maxZoom: 15 }}
+        scrollWheelZoom={false}
+        className="h-72 w-full"
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

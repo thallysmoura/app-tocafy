@@ -12,6 +12,22 @@ body {
   /* Trava zoom por pinça/duplo-toque — fica fixo, como um app nativo. */
   touch-action: pan-x pan-y;
   overscroll-behavior: none;
+  /* Bloqueia seleção de texto e o menu de "copiar/compartilhar" no long-press
+     — sem isso, qualquer toque mais longo seleciona texto como num site,
+     quebrando a sensação de app nativo. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Campos de formulário continuam selecionáveis normalmente — bloquear
+   digitação/seleção ali quebraria a usabilidade. */
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* iOS dá zoom automático ao focar em campo com font-size < 16px — força 16px
@@ -58,4 +74,42 @@ input[type='range'] {
 }
 .now-playing-bar {
   animation: now-playing-bar 0.9s ease-in-out infinite;
+}
+
+/* Anéis pulsando na tela de identificar música — mais lento e calmo que o
+   animate-ping padrão do Tailwind (1s), pra parecer "ouvindo com calma". */
+@keyframes pulse-ring-slow {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.pulse-ring-slow {
+  animation: pulse-ring-slow 2.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Feedback de clique do botão de identificar música: encolhe e volta um
+   pouco maior que o normal antes de assentar — dá a sensação de "captou o
+   toque" antes do overlay de escuta aparecer por cima. */
+@keyframes button-press-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.82);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.button-press-pop {
+  animation: button-press-pop 0.4s ease-out;
 }

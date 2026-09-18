@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, Heart, Play, Shuffle } from 'lucide-react';
+import { Clock, Heart, ListOrdered, Play, Shuffle, Sparkles, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +17,7 @@ type LikeEntry = { track: Track; likedAt: string };
 
 export default function HomePage() {
   const { user } = useAuth();
-  const { play } = usePlayer();
+  const { play, shuffle, toggleShuffle } = usePlayer();
   const [query, setQuery] = useState('');
   const { data: likes, isLoading } = useQuery({
     queryKey: ['likes'],
@@ -28,15 +28,16 @@ export default function HomePage() {
   const tracks = filterTracks(allTracks, query);
   const likedIds = new Set(allTracks.map((t) => t.id));
 
-  function playSequential() {
+  // Respeita o modo de ordem já ativo (igual ao Spotify: o botão "Tocar"
+  // toca em sequência ou aleatório dependendo do que já está selecionado).
+  function handlePlay() {
     if (tracks.length === 0) return;
-    play(tracks[0], tracks, false);
-  }
-
-  function playShuffled() {
-    if (tracks.length === 0) return;
-    const start = tracks[Math.floor(Math.random() * tracks.length)];
-    play(start, tracks, true);
+    if (shuffle) {
+      const start = tracks[Math.floor(Math.random() * tracks.length)];
+      play(start, tracks, true);
+    } else {
+      play(tracks[0], tracks, false);
+    }
   }
 
   return (
@@ -45,24 +46,42 @@ export default function HomePage() {
         Olá, {user?.displayName}
       </h1>
 
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:max-w-md">
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:max-w-2xl sm:grid-cols-4">
         <Link
           href="/library"
-          className="flex items-center gap-3 rounded bg-elevated p-3 hover:bg-elevatedhover"
+          className="flex min-w-0 items-center gap-2.5 rounded bg-elevated p-2.5 hover:bg-elevatedhover"
         >
-          <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-accent to-emerald-700">
-            <Heart size={20} />
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-accent to-emerald-700">
+            <Heart size={16} />
           </span>
-          <span className="font-semibold text-white">Músicas Curtidas</span>
+          <span className="min-w-0 text-sm font-semibold leading-tight text-white">Músicas Curtidas</span>
+        </Link>
+        <Link
+          href="/top"
+          className="flex min-w-0 items-center gap-2.5 rounded bg-elevated p-2.5 hover:bg-elevatedhover"
+        >
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-orange-500 to-red-600">
+            <TrendingUp size={16} />
+          </span>
+          <span className="min-w-0 text-sm font-semibold leading-tight text-white">Mais Tocadas</span>
         </Link>
         <Link
           href="/recent"
-          className="flex items-center gap-3 rounded bg-elevated p-3 hover:bg-elevatedhover"
+          className="flex min-w-0 items-center gap-2.5 rounded bg-elevated p-2.5 hover:bg-elevatedhover"
         >
-          <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-indigo-500 to-indigo-800">
-            <Clock size={20} />
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-indigo-500 to-indigo-800">
+            <Clock size={16} />
           </span>
-          <span className="font-semibold text-white">Recentes</span>
+          <span className="min-w-0 text-sm font-semibold leading-tight text-white">Recentes</span>
+        </Link>
+        <Link
+          href="/recently-added"
+          className="flex min-w-0 items-center gap-2.5 rounded bg-elevated p-2.5 hover:bg-elevatedhover"
+        >
+          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-sky-500 to-cyan-700">
+            <Sparkles size={16} />
+          </span>
+          <span className="min-w-0 text-sm font-semibold leading-tight text-white">Recém-adicionadas</span>
         </Link>
       </div>
 
@@ -71,18 +90,21 @@ export default function HomePage() {
         {!isLoading && allTracks.length > 0 && (
           <div className="flex items-center gap-2">
             <button
-              onClick={playSequential}
+              onClick={handlePlay}
               className="flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white hover:bg-accenthover"
-              title="Tocar em ordem"
+              title="Tocar"
             >
               <Play size={14} /> Tocar
             </button>
             <button
-              onClick={playShuffled}
-              className="flex items-center gap-2 rounded-full bg-elevated px-4 py-1.5 text-sm font-semibold text-white hover:bg-elevatedhover"
-              title="Tocar em ordem aleatória"
+              onClick={toggleShuffle}
+              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold text-white ${
+                shuffle ? 'bg-accent hover:bg-accenthover' : 'bg-elevated hover:bg-elevatedhover'
+              }`}
+              title="Define a ordem da próxima faixa"
             >
-              <Shuffle size={14} /> Aleatório
+              {shuffle ? <ListOrdered size={14} /> : <Shuffle size={14} />}
+              {shuffle ? 'Em Ordem' : 'Aleatório'}
             </button>
           </div>
         )}

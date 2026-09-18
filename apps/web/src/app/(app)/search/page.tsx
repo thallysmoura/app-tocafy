@@ -1,32 +1,32 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { api, audiusTrackToTrack } from '@/lib/api';
+import { Search } from 'lucide-react';
+import { api } from '@/lib/api';
 import TrackList from '@/components/TrackList';
 import SearchBox from '@/components/SearchBox';
 import SkeletonRows from '@/components/SkeletonRows';
 import BackButton from '@/components/BackButton';
-import type { AudiusTrack, Track } from '@/lib/types';
+import type { Track } from '@/lib/types';
 
 type LikeEntry = { track: Track };
 
 export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const hasQuery = query.trim().length > 0;
+  const searchParams = useSearchParams();
+  // Pré-preenche e já busca quando a página é aberta com ?q=... (ex.: link
+  // "Buscar no Tocafy" da identificação de música) — sem isso, o parâmetro
+  // era ignorado e o usuário tinha que digitar o nome de novo.
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
+  // Já abre o campo se veio um ?q= (ex.: link "Buscar no Tocafy" da
+  // identificação de música) — senão fica escondido até clicar na lupa.
+  const [showSearch, setShowSearch] = useState(() => Boolean(searchParams.get('q')));
 
-  // Biblioteca local + provedores externos (hoje: Audius) — mesclados numa lista
-  // só, sem expor de onde cada faixa veio. Dá pra somar mais provedores aqui
-  // depois sem mudar a experiência do usuário.
-  const { data: localTracks, isLoading: loadingLocal } = useQuery({
+  // Só a biblioteca local (o que você baixou/subiu) — sem catálogo externo.
+  const { data: localTracks, isLoading } = useQuery({
     queryKey: ['search', query],
     queryFn: () => api.get<Track[]>(`/tracks/search?q=${encodeURIComponent(query)}`),
-  });
-
-  const { data: audiusResults, isLoading: loadingAudius } = useQuery({
-    queryKey: ['audius-search', query],
-    queryFn: () => api.get<AudiusTrack[]>(`/audius/search?q=${encodeURIComponent(query)}`),
-    enabled: hasQuery,
   });
 
   const { data: likes } = useQuery({
@@ -35,20 +35,29 @@ export default function SearchPage() {
   });
   const likedIds = new Set((likes ?? []).map((l) => l.track.id));
 
-  const isLoading = loadingLocal || (hasQuery && loadingAudius);
-  const tracks: Track[] = [
-    ...(localTracks ?? []),
-    ...(hasQuery ? (audiusResults ?? []).map(audiusTrackToTrack) : []),
-  ];
+  const tracks: Track[] = localTracks ?? [];
 
   return (
     <div className="px-8 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-3xl font-bold text-white">Buscar</h1>
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <h1 className="text-3xl font-bold text-white">Buscar</h1>
+          </div>
+          <button
+            onClick={() => setShowSearch((v) => !v)}
+            aria-label={showSearch ? 'Fechar busca' : 'Abrir busca'}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white hover:bg-elevatedhover"
+          >
+            <Search size={22} />
+          </button>
         </div>
-        <SearchBox value={query} onChange={setQuery} />
+        {showSearch && (
+          <div className="mt-4">
+            <SearchBox value={query} onChange={setQuery} autoFocus />
+          </div>
+        )}
       </div>
 
       {isLoading && <SkeletonRows rows={6} />}
