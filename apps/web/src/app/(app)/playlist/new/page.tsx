@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import BackButton from '@/components/BackButton';
 import CoverArt from '@/components/CoverArt';
+import Spinner from '@/components/Spinner';
 import { trackCoverUrl } from '@/lib/api';
 import type { Playlist, Track } from '@/lib/types';
 
@@ -92,7 +93,11 @@ export default function NewPlaylistPage() {
 
       <p className="mb-3 text-sm text-muted">{selected.size} faixa(s) selecionada(s)</p>
 
-      {isLoading && <p className="text-muted">Carregando...</p>}
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <Spinner size={24} />
+        </div>
+      )}
       {!isLoading && tracks.length === 0 && <p className="text-muted">Nenhuma faixa disponível.</p>}
 
       <div className="mb-6 flex flex-col gap-1">
