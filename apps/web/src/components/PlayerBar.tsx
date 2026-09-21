@@ -81,7 +81,7 @@ export default function PlayerBar() {
       {/* Painel expandido (só mobile) */}
       {expanded && (
         <div className="flex flex-col items-center gap-4 px-6 pb-2 pt-6 sm:hidden">
-          <CoverArt src={cover} size={220} />
+          <CoverArt src={cover} size={220} seed={current.id} />
           <div className="text-center">
             <div className="text-lg font-semibold text-white">{current.title}</div>
             <div className="text-sm text-muted">
@@ -126,7 +126,7 @@ export default function PlayerBar() {
 
       <div className="flex items-center justify-between gap-2 px-3 py-2 sm:h-20 sm:px-4 sm:py-0">
         <div className="flex flex-1 items-center gap-2 overflow-hidden sm:w-64 sm:flex-none sm:gap-3">
-          <CoverArt src={cover} size={40} className="sm:!h-12 sm:!w-12" />
+          <CoverArt src={cover} size={40} seed={current.id} className="sm:!h-12 sm:!w-12" />
           <div className="overflow-hidden">
             <div className="truncate text-sm font-medium text-white">{current.title}</div>
             <div className="hidden truncate text-xs text-muted sm:block">

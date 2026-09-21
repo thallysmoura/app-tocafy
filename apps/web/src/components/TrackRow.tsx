@@ -63,7 +63,7 @@ export default function TrackRow({
         {isActivePlaying ? <NowPlayingBars size={14} /> : <Play size={14} />}
       </button>
       <div className="flex items-center gap-3 overflow-hidden">
-        <CoverArt src={cover} size={40} />
+        <CoverArt src={cover} size={40} seed={track.id} />
         <div className="overflow-hidden">
           <div className={`truncate text-sm font-medium sm:text-base ${isActive ? 'text-accent' : 'text-white'}`}>
             {track.title}

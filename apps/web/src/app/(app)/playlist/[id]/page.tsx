@@ -70,7 +70,7 @@ export default function PlaylistPage({ params }: { params: { id: string } }) {
             className="grid grid-cols-[1fr_auto] items-center gap-4 rounded px-4 py-2"
           >
             <div className="flex items-center gap-3 overflow-hidden">
-              <CoverArt src={trackCoverUrl(track)} size={40} />
+              <CoverArt src={trackCoverUrl(track)} size={40} seed={track.id} />
               <div className="overflow-hidden">
                 <div className="truncate font-medium text-white">{track.title}</div>
                 <div className="truncate text-sm text-muted">
@@ -123,7 +123,7 @@ export default function PlaylistPage({ params }: { params: { id: string } }) {
                 className="grid grid-cols-[1fr_auto] items-center gap-4 rounded px-4 py-2"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <CoverArt src={trackCoverUrl(track)} size={40} />
+                  <CoverArt src={trackCoverUrl(track)} size={40} seed={track.id} />
                   <div className="overflow-hidden">
                     <div className="truncate font-medium text-white">{track.title}</div>
                     <div className="truncate text-sm text-muted">

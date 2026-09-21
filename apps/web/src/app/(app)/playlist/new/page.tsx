@@ -107,7 +107,7 @@ export default function NewPlaylistPage() {
               onChange={() => toggleTrack(track.id)}
               className="h-4 w-4 accent-accent"
             />
-            <CoverArt src={trackCoverUrl(track)} size={36} />
+            <CoverArt src={trackCoverUrl(track)} size={36} seed={track.id} />
             <div className="overflow-hidden">
               <div className="truncate text-sm font-medium text-white">{track.title}</div>
               <div className="truncate text-xs text-muted">
