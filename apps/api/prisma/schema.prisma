@@ -54,6 +54,12 @@ model Track {
   r2Key       String?  @unique
   addedAt     DateTime @default(now())
 
+  // Biblioteca é por conta: cada faixa pertence a quem baixou/enviou ela.
+  // Conta nova começa sem nenhuma — só vê o que ela mesma trouxe. Faixas de
+  // antes dessa coluna existir (scan do disco) ficam com o admin.
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId String?
+
   genres          TrackGenre[]
   likes           Like[]
   playlistEntries PlaylistTrack[]
@@ -61,6 +67,7 @@ model Track {
 
   @@index([artistId])
   @@index([albumId])
+  @@index([ownerId])
 }
 
 model User {
@@ -71,6 +78,9 @@ model User {
   avatarKey          String?
   googleAvatarUrl    String?
   mustChangePassword Boolean  @default(false)
+  // Só o admin mexe em recursos compartilhados do servidor (ex.: rescanear a
+  // pasta de música local). Contas novas nunca nascem admin.
+  isAdmin            Boolean  @default(false)
   createdAt          DateTime @default(now())
 
   refreshTokens        RefreshToken[]
@@ -80,6 +90,7 @@ model User {
   pushSubscriptions    PushSubscription[]
   notificationPrefs    NotificationPreference?
   accessLogs           AccessLog[]
+  tracks               Track[]
 }
 
 // Log de toda tentativa de login (sucesso ou falha) — segurança/auditoria.

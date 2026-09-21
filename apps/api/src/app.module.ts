@@ -10,7 +10,6 @@ import { LibraryModule } from './library/library.module';
 import { PushModule } from './push/push.module';
 import { MeModule } from './me/me.module';
 import { HealthModule } from './health/health.module';
-import { AudiusModule } from './audius/audius.module';
 import { StorageModule } from './storage/storage.module';
 import { RecognizeModule } from './recognize/recognize.module';
 
@@ -27,7 +26,6 @@ import { RecognizeModule } from './recognize/recognize.module';
     LibraryModule,
     PushModule,
     HealthModule,
-    AudiusModule,
     RecognizeModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

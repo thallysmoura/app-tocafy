@@ -141,6 +141,7 @@ export class AuthService {
       email: user.email,
       displayName: user.displayName,
       mustChangePassword: user.mustChangePassword,
+      isAdmin: user.isAdmin,
       avatarUrl,
       createdAt: user.createdAt,
     };

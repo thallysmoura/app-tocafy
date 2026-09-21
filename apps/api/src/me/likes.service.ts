@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -6,6 +6,8 @@ export class LikesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async like(userId: string, trackId: string) {
+    const track = await this.prisma.track.findUnique({ where: { id: trackId } });
+    if (!track || track.ownerId !== userId) throw new NotFoundException('Faixa não encontrada');
     await this.prisma.like.upsert({
       where: { userId_trackId: { userId, trackId } },
       create: { userId, trackId },

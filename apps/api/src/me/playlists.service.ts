@@ -78,6 +78,8 @@ export class PlaylistsService {
 
   async addTrack(playlistId: string, userId: string, trackId: string) {
     await this.getOwnedOrFail(playlistId, userId);
+    const track = await this.prisma.track.findUnique({ where: { id: trackId } });
+    if (!track || track.ownerId !== userId) throw new NotFoundException('Faixa não encontrada');
     const last = await this.prisma.playlistTrack.findFirst({
       where: { playlistId },
       orderBy: { position: 'desc' },

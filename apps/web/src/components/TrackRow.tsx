@@ -68,7 +68,7 @@ export default function TrackRow({
           <div className={`truncate text-sm font-medium sm:text-base ${isActive ? 'text-accent' : 'text-white'}`}>
             {track.title}
           </div>
-          {track.artist && track.artist.name !== 'Artista desconhecido' && track.source !== 'audius' ? (
+          {track.artist && track.artist.name !== 'Artista desconhecido' ? (
             <Link
               href={`/artist/${track.artist.id}`}
               onClick={(e) => e.stopPropagation()}
@@ -94,16 +94,12 @@ export default function TrackRow({
       ) : (
         <span className="hidden truncate text-sm text-muted sm:block">—</span>
       )}
-      {track.source === 'audius' ? (
-        <span />
-      ) : (
-        <button
-          onClick={toggleLike}
-          className={`ml-2 justify-self-end ${liked ? 'text-accent' : 'text-muted hover:text-white'}`}
-        >
-          <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-        </button>
-      )}
+      <button
+        onClick={toggleLike}
+        className={`ml-2 justify-self-end ${liked ? 'text-accent' : 'text-muted hover:text-white'}`}
+      >
+        <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+      </button>
       <div className="text-right text-sm text-muted">{formatDuration(track.durationSec)}</div>
     </div>
   );

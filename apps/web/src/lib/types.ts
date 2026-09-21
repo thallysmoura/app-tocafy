@@ -12,19 +12,6 @@ export type Track = {
   durationSec: number | null;
   coverPath: string | null;
   addedAt: string;
-  /** Presente quando a faixa vem de um catálogo externo (ex. Audius) em vez da sua biblioteca. */
-  source?: 'local' | 'audius';
-  externalCoverUrl?: string | null;
-};
-
-/** Resultado de busca no Audius — catálogo externo, streaming completo e gratuito. */
-export type AudiusTrack = {
-  id: string;
-  title: string;
-  artistName: string;
-  artworkUrl: string | null;
-  durationSec: number | null;
-  source: 'audius';
 };
 
 export type Playlist = {
@@ -49,6 +36,7 @@ export type AuthUser = {
   email: string;
   displayName: string;
   mustChangePassword: boolean;
+  isAdmin: boolean;
   avatarUrl: string | null;
   createdAt: string;
 };

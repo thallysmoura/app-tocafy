@@ -3,6 +3,10 @@ packages:
   - 'packages/*'
 overrides:
   zod: ^3.25.76
+  # CVE de DoS por decompressão ilimitada — puxado transitivamente pelo
+  # binário pré-compilado do bcrypt (@mapbox/node-pre-gyp), só usado no
+  # install; força a versão corrigida mesmo assim.
+  tar: '>=7.5.19'
 allowBuilds:
   '@firebase/util': true
   '@nestjs/core': true

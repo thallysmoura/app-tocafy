@@ -44,13 +44,13 @@ export class TracksController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.tracksService.findAll();
+  findAll(@CurrentUserId() userId: string) {
+    return this.tracksService.findAll(userId);
   }
 
   @Get('search')
-  search(@Query('q') q = '') {
-    return this.tracksService.search(q);
+  search(@Query('q') q = '', @CurrentUserId() userId: string) {
+    return this.tracksService.search(q, userId);
   }
 
   @Post('upload')
@@ -67,7 +67,7 @@ export class TracksController {
     if (!file.originalname.toLowerCase().endsWith('.mp3')) {
       throw new BadRequestException('Só arquivos .mp3 são suportados.');
     }
-    const track = await this.libraryService.importUploadedTrack(file.buffer, file.originalname);
+    const track = await this.libraryService.importUploadedTrack(file.buffer, file.originalname, userId);
     await this.likesService.like(userId, track.id);
     return track;
   }
@@ -91,7 +91,7 @@ export class TracksController {
     if (!job) throw new NotFoundException('Job não encontrado ou já expirado.');
     if (job.status === 'downloading') return { status: 'downloading', percent: job.percent };
     if (job.status === 'error') return { status: 'error', error: job.error };
-    const track = await this.libraryService.importUploadedTrack(job.buffer, `${job.title}.mp3`);
+    const track = await this.libraryService.importUploadedTrack(job.buffer, `${job.title}.mp3`, userId);
     await this.likesService.like(userId, track.id);
     return { status: 'done', track };
   }
@@ -102,7 +102,7 @@ export class TracksController {
     @Res() res: Response,
     @CurrentUserId() userId: string,
   ) {
-    const track = await this.tracksService.findOneOrFail(id);
+    const track = await this.tracksService.findOneOrFail(id, userId);
     this.likesService.recordPlay(userId, track.id).catch(() => undefined);
 
     if (track.r2Key && this.r2.isEnabled) {
@@ -145,8 +145,8 @@ export class TracksController {
   }
 
   @Get(':id/cover')
-  async cover(@Param('id') id: string, @Res() res: Response) {
-    const track = await this.tracksService.findOneOrFail(id);
+  async cover(@Param('id') id: string, @Res() res: Response, @CurrentUserId() userId: string) {
+    const track = await this.tracksService.findOneOrFail(id, userId);
     if (!track.coverPath || !fs.existsSync(track.coverPath)) {
       throw new NotFoundException('Sem capa');
     }

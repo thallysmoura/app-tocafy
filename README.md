@@ -113,12 +113,55 @@ com tudo containerizado.
    `cloudflared` para bater com o `<TUNNEL_ID>` gerado no passo 1.
 5. `docker compose up -d` sobe tudo, incluindo o túnel.
 
+## Segurança
+
+**Rede/infra**
+- Nenhuma porta aberta no roteador/firewall — Cloudflare Tunnel só faz conexão de *saída*, não
+  existe IP público direto do servidor pra escanear.
+- `postgres`, `api` e `web` publicam porta só em `127.0.0.1` no compose — inacessíveis pela rede,
+  só via loopback ou pelo próprio túnel.
+- Containers rodam como usuário não-root (`tocafy`), não como `root`.
+- Segredos (`.env*`, `firebase-service-account.json`, `.cloudflared/`) nunca vão pro git —
+  cobertos no `.gitignore`.
+
+**Aplicação**
+- Login por JWT em cookies `HttpOnly` + `Secure` + `SameSite=strict` em produção; senhas com
+  `bcrypt`.
+- Rate limit global (`@nestjs/throttler`) + bloqueio específico de força-bruta no login (8
+  tentativas falhas em 15min por e-mail).
+- Log de acesso: toda tentativa de login (sucesso/falha) e retorno ao app fica registrada com IP,
+  localização, dispositivo e navegador — dá pra auditar acesso suspeito.
+- `helmet` na API (headers de segurança padrão); `X-Frame-Options`, `X-Content-Type-Options`,
+  `Referrer-Policy` e `Permissions-Policy` (restringe microfone/geolocalização ao próprio site)
+  no front.
+- CORS restrito só ao domínio configurado; validação de input com whitelist
+  (`forbidNonWhitelisted`) em toda rota; Prisma parametrizado (sem SQL injection).
+- Biblioteca de música é **isolada por conta**: cada faixa pertence a quem importou ela — uma
+  conta nova começa sem nenhuma música, sem ver a de ninguém.
+
+**Dependências**
+- Removido `@audius/sdk` (não usado mais) — eliminou ~85 vulnerabilidades transitivas de SDKs de
+  blockchain (Aptos/Cosmos/Wormhole) que não tinham nada a ver com o projeto.
+- API de otimização de imagem do Next.js desligada (`images: unoptimized`) — não é usada e tinha
+  um RCE crítico conhecido na versão atual.
+- `pnpm audit` rodado regularmente; overrides aplicados pra pacotes transitivos com CVE conhecido
+  quando não dá pra atualizar a dependência direta.
+
+**Nível atual:** bem protegido contra scan/bot genérico de internet (sem superfície de rede
+exposta) e contra as classes de ataque mais comuns em apps web (XSS, SQL injection, força bruta,
+CSRF via cookie `SameSite`). O que falta pra "excelente": upgrade major do Next.js (14→15, corrige
+as últimas vulnerabilidades críticas conhecidas, mas exige teste completo antes) e uma
+Content-Security-Policy explícita no front (hoje sem CSP, porque o app depende de vários domínios
+externos — Firebase, R2, YouTube, OpenStreetMap — e uma CSP mal calibrada quebra o app em produção
+sem aviso).
+
 ## Estrutura
 
 ```
 apps/
-  api/     — NestJS + Prisma. Auth (JWT), tracks, playlists, likes, upload (arquivo/YouTube),
-             streaming (local ou R2 via URL presigned), push, integração Audius.
+  api/     — NestJS + Prisma. Auth (JWT), tracks (biblioteca por usuário), playlists, likes,
+             upload (arquivo/YouTube), identificação de música (fingerprint + Shazam),
+             streaming (local ou R2 via URL presigned), push, log de acesso.
   web/     — Next.js (App Router). Sidebar, player persistente (Context + <audio>),
              busca, biblioteca, playlists, upload de música (arquivo .mp3 ou link do YouTube).
 packages/

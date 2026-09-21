@@ -1,5 +1,3 @@
-import type { Track } from './types';
-
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export class ApiError extends Error {
@@ -66,8 +64,7 @@ export const api = {
     request<T>(path, { method: 'POST', body: formData }),
 };
 
-export function trackStreamUrl(track: { id: string; source?: string }) {
-  if (track.source === 'audius') return `${API_URL}/audius/tracks/${track.id}/stream`;
+export function trackStreamUrl(track: { id: string }) {
   return `${API_URL}/tracks/${track.id}/stream`;
 }
 
@@ -78,30 +75,6 @@ export function trackCoverUrl(track: {
 }) {
   if (track.externalCoverUrl) return track.externalCoverUrl;
   return track.coverPath ? `${API_URL}/tracks/${track.id}/cover` : null;
-}
-
-/** Converte um resultado de busca do Audius pro mesmo formato de Track usado no resto do app. */
-export function audiusTrackToTrack(t: {
-  id: string;
-  title: string;
-  artistName: string;
-  artworkUrl: string | null;
-  durationSec: number | null;
-}): Track {
-  return {
-    id: t.id,
-    title: t.title,
-    filePath: '',
-    artistId: null,
-    artist: { id: `audius:${t.id}`, name: t.artistName },
-    albumId: null,
-    album: null,
-    durationSec: t.durationSec,
-    coverPath: null,
-    addedAt: new Date().toISOString(),
-    source: 'audius',
-    externalCoverUrl: t.artworkUrl,
-  };
 }
 
 export function formatDuration(seconds: number | null | undefined) {

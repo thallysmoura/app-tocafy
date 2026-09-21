@@ -101,10 +101,15 @@ export class LibraryService implements OnModuleInit {
       .trim();
   }
 
-  private async findDuplicateTrack(title: string, artistName: string) {
+  // Dedupe é por dono — dois usuários podem baixar a mesma música, cada um
+  // com a própria cópia; só evita duplicar dentro da biblioteca da mesma conta.
+  private async findDuplicateTrack(title: string, artistName: string, ownerId: string) {
     const normTitle = this.normalizeForDedup(title);
     const normArtist = this.normalizeForDedup(artistName);
-    const candidates = await this.prisma.track.findMany({ include: { artist: true, album: true } });
+    const candidates = await this.prisma.track.findMany({
+      where: { ownerId },
+      include: { artist: true, album: true },
+    });
     return (
       candidates.find(
         (t) =>
@@ -112,6 +117,16 @@ export class LibraryService implements OnModuleInit {
           this.normalizeForDedup(t.artist?.name ?? '') === normArtist,
       ) ?? null
     );
+  }
+
+  /** Id do admin — dono de tudo que entra pelo scan do disco (recurso do
+   * servidor, não de um usuário específico). Cacheado após a primeira busca. */
+  private adminIdCache: string | null | undefined;
+  private async getAdminId(): Promise<string | null> {
+    if (this.adminIdCache !== undefined) return this.adminIdCache;
+    const admin = await this.prisma.user.findFirst({ where: { isAdmin: true } });
+    this.adminIdCache = admin?.id ?? null;
+    return this.adminIdCache;
   }
 
   private async upsertArtist(name: string) {
@@ -150,6 +165,7 @@ export class LibraryService implements OnModuleInit {
     if (existing) return false;
 
     const notify = opts.notify ?? true;
+    const ownerId = await this.getAdminId();
 
     try {
       const metadata = await parseFile(filePath);
@@ -183,6 +199,7 @@ export class LibraryService implements OnModuleInit {
           albumId: album?.id,
           durationSec,
           coverPath: album?.coverPath ?? coverPath,
+          ownerId,
         },
       });
 
@@ -213,6 +230,7 @@ export class LibraryService implements OnModuleInit {
           filePath,
           title: path.basename(filePath, '.mp3'),
           artistId: artist.id,
+          ownerId,
         },
       });
       await this.uploadToR2(track.id, filePath);
@@ -225,7 +243,7 @@ export class LibraryService implements OnModuleInit {
    * buffer (sem tocar em disco), cria o Track e sobe pro R2. Exige R2 configurado —
    * não existe "arquivo local" pra fazer fallback aqui.
    */
-  async importUploadedTrack(buffer: Buffer, originalName: string) {
+  async importUploadedTrack(buffer: Buffer, originalName: string, ownerId: string) {
     if (!this.r2.isEnabled) {
       throw new BadRequestException('Upload indisponível no momento.');
     }
@@ -236,9 +254,10 @@ export class LibraryService implements OnModuleInit {
     const artistName = common?.artist || common?.albumartist || 'Artista desconhecido';
     const durationSec = metadata?.format.duration ? Math.round(metadata.format.duration) : null;
 
-    // Já existe uma faixa com esse título+artista? Não sobe de novo pro R2 —
-    // devolve a que já existe (o controller ainda favorita ela normalmente).
-    const duplicate = await this.findDuplicateTrack(title, artistName);
+    // Já existe uma faixa com esse título+artista NA BIBLIOTECA DESSE USUÁRIO?
+    // Não sobe de novo pro R2 — devolve a que já existe (o controller ainda
+    // favorita ela normalmente).
+    const duplicate = await this.findDuplicateTrack(title, artistName, ownerId);
     if (duplicate) return duplicate;
 
     let coverPath: string | null = null;
@@ -264,6 +283,7 @@ export class LibraryService implements OnModuleInit {
         albumId: album?.id,
         durationSec,
         coverPath: album?.coverPath ?? coverPath,
+        ownerId,
       },
     });
 
