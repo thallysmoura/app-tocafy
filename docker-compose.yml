@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tocafy}
       POSTGRES_DB: ${POSTGRES_DB:-tocafy}
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - tocafy_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -28,7 +28,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - '3001:3001'
+      - '127.0.0.1:3001:3001'
     volumes:
       - ${MUSIC_DIR}:/music:ro
       - tocafy_covers_data:/app/covers
@@ -53,7 +53,7 @@ services:
     depends_on:
       - api
     ports:
-      - '3002:3002'
+      - '127.0.0.1:3002:3002'
 
   cloudflared:
     image: cloudflare/cloudflared:latest

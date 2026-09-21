@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Mic, Search, X } from 'lucide-react';
+import { ArrowLeft, Download, Mic, Music, Search, X } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { useDownload } from '@/context/DownloadContext';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 
@@ -12,12 +13,30 @@ const LISTEN_SECONDS = LISTEN_MS / 1000;
 
 type Result = { found: true; title: string; artist: string; coverUrl: string | null } | { found: false };
 
+type YoutubeOption = {
+  url: string;
+  title: string;
+  channel: string;
+  durationSec: number | null;
+  thumbnail: string | null;
+};
+
+function formatYtDuration(sec: number | null) {
+  if (sec == null) return '';
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function IdentifyPage() {
   const [status, setStatus] = useState<'idle' | 'listening' | 'analyzing'>('idle');
   const [pressed, setPressed] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(LISTEN_SECONDS);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ytOptions, setYtOptions] = useState<YoutubeOption[] | null>(null);
+  const [ytSearching, setYtSearching] = useState(false);
+  const { startYoutubeDownload } = useDownload();
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const countdownRef = useRef<number | undefined>(undefined);
@@ -45,6 +64,32 @@ export default function IdentifyPage() {
     recorderRef.current?.stop();
     stopStream();
     setStatus('idle');
+  }
+
+  function closeResultModal() {
+    setResult(null);
+    setYtOptions(null);
+  }
+
+  async function handleFindOnYoutube() {
+    if (!result?.found) return;
+    setYtSearching(true);
+    setYtOptions([]);
+    try {
+      const list = await api.get<YoutubeOption[]>(
+        `/tracks/youtube/search?q=${encodeURIComponent(`${result.title} ${result.artist}`)}`,
+      );
+      setYtOptions(list);
+    } catch {
+      setYtOptions([]);
+    } finally {
+      setYtSearching(false);
+    }
+  }
+
+  function pickYoutubeResult(url: string) {
+    startYoutubeDownload(url);
+    closeResultModal();
   }
 
   function handleButtonClick() {
@@ -205,67 +250,126 @@ export default function IdentifyPage() {
       {result && (
         <div
           className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 px-8 text-center backdrop-blur-sm"
-          onClick={() => setResult(null)}
+          onClick={closeResultModal}
         >
+          {ytOptions !== null && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setYtOptions(null);
+              }}
+              className="absolute left-5 top-[calc(env(safe-area-inset-top)+1.25rem)] flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              aria-label="Voltar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <button
-            onClick={() => setResult(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              closeResultModal();
+            }}
             className="absolute right-5 top-[calc(env(safe-area-inset-top)+1.25rem)] flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
             aria-label="Fechar"
           >
             <X size={20} />
           </button>
 
-          <div onClick={(e) => e.stopPropagation()} className="flex w-full max-w-xs flex-col items-center">
-            {result.found ? (
-              <>
-                {result.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={result.coverUrl}
-                    alt=""
-                    className="h-52 w-52 rounded-xl object-cover shadow-2xl"
-                  />
-                ) : (
-                  <div className="flex h-52 w-52 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-emerald-800 shadow-2xl">
-                    <Logo size={72} />
-                  </div>
-                )}
-                <h2 className="mt-6 truncate text-xl font-bold text-white">{result.title}</h2>
-                <p className="mt-1 truncate text-sm text-white/60">{result.artist}</p>
+          {ytOptions !== null ? (
+            <div onClick={(e) => e.stopPropagation()} className="flex w-full max-w-sm flex-col items-center">
+              <h2 className="mb-1 text-lg font-bold text-white">Escolha o vídeo</h2>
+              <p className="mb-6 text-sm text-white/60">Qual desses é a música certa?</p>
 
-                <Link
-                  href={`/search?q=${encodeURIComponent(`${result.title} ${result.artist}`)}`}
-                  onClick={() => setResult(null)}
-                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-white hover:bg-accenthover"
-                >
-                  <Search size={16} />
-                  Buscar no Tocafy
-                </Link>
-                <button
-                  onClick={() => setResult(null)}
-                  className="mt-3 w-full rounded-full py-3 text-sm font-bold text-white/70 hover:text-white"
-                >
-                  Fechar
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="flex h-52 w-52 items-center justify-center rounded-xl bg-elevated shadow-2xl">
-                  <Mic size={56} className="text-muted" />
-                </div>
-                <h2 className="mt-6 text-lg font-bold text-white">Não identificamos essa música</h2>
-                <p className="mt-1 text-sm text-white/60">
-                  Tente de novo mais perto do som e num ambiente mais silencioso.
-                </p>
-                <button
-                  onClick={() => setResult(null)}
-                  className="mt-8 w-full rounded-full bg-accent py-3 text-sm font-bold text-white hover:bg-accenthover"
-                >
-                  Fechar
-                </button>
-              </>
-            )}
-          </div>
+              {ytSearching && <p className="text-sm text-white/60">Buscando no YouTube...</p>}
+              {!ytSearching && ytOptions.length === 0 && (
+                <p className="text-sm text-white/60">Nenhum resultado encontrado no YouTube.</p>
+              )}
+
+              <div className="flex w-full flex-col gap-2 overflow-y-auto">
+                {ytOptions.map((opt) => (
+                  <button
+                    key={opt.url}
+                    onClick={() => pickYoutubeResult(opt.url)}
+                    className="flex items-center gap-3 rounded-lg bg-white/5 p-2 text-left hover:bg-white/10"
+                  >
+                    {opt.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={opt.thumbnail} alt="" className="h-12 w-16 flex-shrink-0 rounded object-cover" />
+                    ) : (
+                      <div className="flex h-12 w-16 flex-shrink-0 items-center justify-center rounded bg-elevatedhover text-muted">
+                        <Music size={18} />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-white">{opt.title}</div>
+                      <div className="truncate text-xs text-white/50">
+                        {[opt.channel, formatYtDuration(opt.durationSec)].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div onClick={(e) => e.stopPropagation()} className="flex w-full max-w-xs flex-col items-center">
+              {result.found ? (
+                <>
+                  {result.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={result.coverUrl}
+                      alt=""
+                      className="h-52 w-52 rounded-xl object-cover shadow-2xl"
+                    />
+                  ) : (
+                    <div className="flex h-52 w-52 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-emerald-800 shadow-2xl">
+                      <Logo size={72} />
+                    </div>
+                  )}
+                  <h2 className="mt-6 truncate text-xl font-bold text-white">{result.title}</h2>
+                  <p className="mt-1 truncate text-sm text-white/60">{result.artist}</p>
+
+                  <button
+                    onClick={handleFindOnYoutube}
+                    className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-white hover:bg-accenthover"
+                  >
+                    <Download size={16} />
+                    Baixar do YouTube
+                  </button>
+                  <Link
+                    href={`/search?q=${encodeURIComponent(`${result.title} ${result.artist}`)}`}
+                    onClick={closeResultModal}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-white/10 py-3 text-sm font-bold text-white hover:bg-white/20"
+                  >
+                    <Search size={16} />
+                    Buscar no Tocafy
+                  </Link>
+                  <button
+                    onClick={closeResultModal}
+                    className="mt-3 w-full rounded-full py-3 text-sm font-bold text-white/70 hover:text-white"
+                  >
+                    Fechar
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex h-52 w-52 items-center justify-center rounded-xl bg-elevated shadow-2xl">
+                    <Mic size={56} className="text-muted" />
+                  </div>
+                  <h2 className="mt-6 text-lg font-bold text-white">Não identificamos essa música</h2>
+                  <p className="mt-1 text-sm text-white/60">
+                    Tente de novo mais perto do som e num ambiente mais silencioso.
+                  </p>
+                  <button
+                    onClick={closeResultModal}
+                    className="mt-8 w-full rounded-full bg-accent py-3 text-sm font-bold text-white hover:bg-accenthover"
+                  >
+                    Fechar
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

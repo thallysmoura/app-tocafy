@@ -18,6 +18,24 @@ type Job =
   | { status: 'done'; percent: 100; buffer: Buffer; title: string }
   | { status: 'error'; error: string };
 
+export type YoutubeSearchResult = {
+  url: string;
+  title: string;
+  channel: string;
+  durationSec: number | null;
+  thumbnail: string | null;
+};
+
+type YtDlpSearchEntry = {
+  id: string;
+  title: string;
+  uploader?: string;
+  channel?: string;
+  duration?: number;
+  thumbnail?: string;
+  thumbnails?: { url: string }[];
+};
+
 /**
  * yt-dlp (não youtube-mp3-downloader/ytdl-core) é o motor aqui: o YouTube passou
  * a exigir um "poToken" anti-bot que quebra qualquer lib baseada em ytdl-core
@@ -33,6 +51,33 @@ export class YoutubeDownloadService {
 
   private assertValidUrl(url: string) {
     if (!YOUTUBE_URL_RE.test(url)) throw new BadRequestException('Link do YouTube inválido.');
+  }
+
+  /** Busca no YouTube (metadados só, sem baixar nada) — usado pra deixar o
+   * usuário escolher qual vídeo baixar em vez de adivinhar o primeiro resultado. */
+  async search(query: string, limit = 6): Promise<YoutubeSearchResult[]> {
+    const q = query.trim();
+    if (!q) return [];
+    try {
+      const result = (await ytdlp(`ytsearch${limit}:${q}`, {
+        dumpSingleJson: true,
+        flatPlaylist: true,
+        noWarnings: true,
+      })) as { entries?: YtDlpSearchEntry[] };
+
+      return (result.entries ?? [])
+        .filter((e) => e?.id)
+        .map((e) => ({
+          url: `https://www.youtube.com/watch?v=${e.id}`,
+          title: e.title ?? 'Sem título',
+          channel: e.uploader ?? e.channel ?? '',
+          durationSec: typeof e.duration === 'number' ? Math.round(e.duration) : null,
+          thumbnail: e.thumbnails?.length ? e.thumbnails[e.thumbnails.length - 1].url : (e.thumbnail ?? null),
+        }));
+    } catch (err) {
+      this.logger.warn(`Falha ao buscar no YouTube ("${q}"): ${(err as Error).message}`);
+      return [];
+    }
   }
 
   startDownload(url: string): string {

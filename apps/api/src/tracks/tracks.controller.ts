@@ -78,6 +78,13 @@ export class TracksController {
     return { jobId };
   }
 
+  // Precisa vir antes de "youtube/:jobId" — senão o Nest casa "search" como
+  // se fosse um jobId (rota com parâmetro registrada primeiro "engole" tudo).
+  @Get('youtube/search')
+  searchYoutube(@Query('q') q = '') {
+    return this.youtubeDownload.search(q);
+  }
+
   @Get('youtube/:jobId')
   async youtubeJobStatus(@Param('jobId') jobId: string, @CurrentUserId() userId: string) {
     const job = this.youtubeDownload.consumeJob(jobId);
