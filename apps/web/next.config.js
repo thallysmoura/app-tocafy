@@ -12,6 +12,10 @@ const nextConfig = {
   // seguro e mais rápido que um upgrade major arriscado do Next agora.
   images: { unoptimized: true },
 
+  // Não anuncia "Next.js" no header X-Powered-By pra quem for escanear o
+  // site — a API já esconde isso por padrão via helmet.
+  poweredByHeader: false,
+
   // Headers de segurança básicos — o app não tinha nenhum antes (só a API
   // usava helmet). Sem CSP explícita de propósito: o app usa vários domínios
   // externos (Firebase, R2, YouTube, OpenStreetMap) e uma CSP mal calibrada
