@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Mic, Music, Search, X } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { useDownload } from '@/context/DownloadContext';
@@ -37,6 +38,7 @@ export default function IdentifyPage() {
   const [ytOptions, setYtOptions] = useState<YoutubeOption[] | null>(null);
   const [ytSearching, setYtSearching] = useState(false);
   const { startYoutubeDownload } = useDownload();
+  const router = useRouter();
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const countdownRef = useRef<number | undefined>(undefined);
@@ -90,6 +92,9 @@ export default function IdentifyPage() {
   function pickYoutubeResult(url: string) {
     startYoutubeDownload(url);
     closeResultModal();
+    // Leva pra tela de upload, onde o progresso do download já é exibido —
+    // assim o usuário acompanha sem precisar procurar onde foi parar.
+    router.push('/upload');
   }
 
   function handleButtonClick() {
@@ -173,12 +178,19 @@ export default function IdentifyPage() {
 
       <div
         className={`fixed inset-0 z-0 px-8 text-center ${
-          isBusy ? 'bg-gradient-to-b from-[#12d374] via-accent to-[#04170c]' : ''
+          isBusy ? 'bg-gradient-to-b from-[#12d374] via-accent to-[#04170c]' : 'pointer-events-none'
         }`}
       >
+        {/* Esse container cobre a tela inteira (inclusive a sidebar) só pra
+            centralizar o círculo — sem pointer-events-none no idle, ele
+            ficava por cima da sidebar/menu e bloqueava os cliques neles.
+            No estado ocupado ele é o overlay em si, então continua
+            capturando clique normalmente; só os elementos internos abaixo
+            precisam de pointer-events-auto pra funcionar quando o pai está
+            desabilitado no idle. */}
         {/* Âncora do círculo: posição absoluta idêntica em todos os estados
             (idle/ouvindo/identificando), então ele nunca pula de lugar. */}
-        <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2">
+        <div className="pointer-events-auto absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2">
           {!isBusy ? (
             <div className="flex h-full w-full items-center justify-center">
               <button
@@ -211,7 +223,7 @@ export default function IdentifyPage() {
 
         {/* Âncora do texto/resultado: mesmo deslocamento a partir do centro
             em todos os estados. */}
-        <div className="absolute left-1/2 top-[calc(50%+9rem)] w-full max-w-sm -translate-x-1/2 px-8">
+        <div className="pointer-events-auto absolute left-1/2 top-[calc(50%+9rem)] w-full max-w-sm -translate-x-1/2 px-8">
           {!isBusy ? (
             <>
               <p className="text-base font-bold text-white">Toque para começar</p>
